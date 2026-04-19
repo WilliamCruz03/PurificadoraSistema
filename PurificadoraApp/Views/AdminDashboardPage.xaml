@@ -7,7 +7,7 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
 
-        <!-- Header con estadísticas -->
+        <!-- Header con estadísticas - Fila 0 -->
         <Grid Grid.Row="0" BackgroundColor="#2c3e50" Padding="15" ColumnDefinitions="*,*,*,*,Auto">
             <StackLayout Grid.Column="0" HorizontalOptions="Center">
                 <Label x:Name="LblTotalEntregas" Text="0" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center"/>
@@ -30,12 +30,12 @@
                     Clicked="OnLogoutClicked"/>
         </Grid>
 
-        <!-- Buscador rápido -->
+        <!-- Buscador rápido - Fila 1 -->
         <SearchBar x:Name="SearchBarBuscar" Grid.Row="1" Placeholder="Buscar por cliente o repartidor..." 
                    TextChanged="OnBuscarTextoChanged" Margin="10,5,10,0"
                    BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"/>
 
-        <!-- Filtros rápidos -->
+        <!-- Filtros rápidos - Fila 2 -->
         <HorizontalStackLayout Grid.Row="2" Spacing="10" Margin="10,5,10,0">
             <Button Text="Hoy" Clicked="OnFiltroHoyClicked" BackgroundColor="#3498db" TextColor="White" CornerRadius="5" HeightRequest="35"/>
             <Button Text="Semana" Clicked="OnFiltroSemanaClicked" BackgroundColor="#3498db" TextColor="White" CornerRadius="5" HeightRequest="35"/>
@@ -43,8 +43,8 @@
             <Button Text="Todos" Clicked="OnFiltroTodosClicked" BackgroundColor="#3498db" TextColor="White" CornerRadius="5" HeightRequest="35"/>
         </HorizontalStackLayout>
 
-        <!-- Filtros avanzados -->
-        <Grid Grid.Row="2" Padding="10" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,35,0,0">
+        <!-- Filtros avanzados - Fila 3 (con Picker y DatePickers) -->
+        <Grid Grid.Row="3" Padding="10" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
             <Picker x:Name="PickerFiltroRepartidor" Grid.Row="0" Grid.ColumnSpan="2" Title="Filtrar por repartidor" SelectedIndexChanged="OnFiltroChanged"
                     BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}"
                     TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
@@ -56,14 +56,8 @@
             <DatePicker x:Name="DateFechaFin" Grid.Row="1" Grid.Column="1" VerticalOptions="End"/>
         </Grid>
 
-        <!-- Gráfico de barras -->
-        <VerticalStackLayout Grid.Row="3" Margin="10,5,10,10">
-            <Label Text="📈 Entregas Últimos 7 Días" FontSize="14" FontAttributes="Bold" 
-           TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
-            <HorizontalStackLayout x:Name="GraficoBarras" HeightRequest="150"/>
-        </VerticalStackLayout>
 
-        <!-- Lista de entregas -->
+        <!-- Lista de entregas - Fila 4 -->
         <CollectionView x:Name="ListaEntregas" Grid.Row="4" SelectionMode="Single" SelectionChanged="OnEntregaSeleccionada">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
@@ -103,7 +97,7 @@
                            HorizontalOptions="Center" VerticalOptions="Center"
                            Color="{AppThemeBinding Light=#2c3e50, Dark=#3498db}"/>
 
-        <!-- Botones flotantes -->
+        <!-- Botones flotantes - Fila 5 -->
         <StackLayout Grid.Row="5" Orientation="Horizontal" HorizontalOptions="End" Spacing="10" Margin="0,0,20,20">
             <Button x:Name="BtnSync" Text="🔄 Sincronizar" BackgroundColor="#2c3e50" TextColor="White" FontSize="14"
                     CornerRadius="30" WidthRequest="100" HeightRequest="50" Clicked="OnSyncClicked"/>

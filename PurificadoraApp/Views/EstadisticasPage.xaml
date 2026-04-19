@@ -47,8 +47,13 @@
                     </Frame>
                 </Grid>
 
+                <!-- Gráfico de barras - Entregas últimos 7 días -->
+                <Label Text="📈 Entregas Últimos 7 Días" FontSize="16" FontAttributes="Bold" Margin="0,20,0,5"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+                <HorizontalStackLayout x:Name="GraficoBarras" HeightRequest="150" Margin="0,5,0,15"/>
+
                 <!-- Top Repartidores -->
-                <Label Text="🏆 Top Repartidores" FontSize="18" FontAttributes="Bold" Margin="0,20,0,5"
+                <Label Text="🏆 Top Repartidores" FontSize="16" FontAttributes="Bold" Margin="0,20,0,5"
                        TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
                 <CollectionView x:Name="ListaTopRepartidores" HeightRequest="200">
                     <CollectionView.ItemTemplate>
@@ -65,7 +70,7 @@
                 </CollectionView>
 
                 <!-- Últimas entregas -->
-                <Label Text="📋 Últimas Entregas" FontSize="18" FontAttributes="Bold" Margin="0,20,0,5"
+                <Label Text="📋 Últimas Entregas" FontSize="16" FontAttributes="Bold" Margin="0,20,0,5"
                        TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
                 <CollectionView x:Name="ListaUltimasEntregas" HeightRequest="250">
                     <CollectionView.ItemTemplate>
