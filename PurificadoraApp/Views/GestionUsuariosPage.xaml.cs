@@ -29,21 +29,25 @@ namespace PurificadoraApp.Views
         {
             try
             {
+                IndicatorCarga.IsVisible = true;
+                IndicatorCarga.IsRunning = true;
+
                 var response = await _supabaseAdminClient.Rpc("get_all_users", new { });
 
                 if (response.Content != null)
                 {
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    };
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     _usuarios = JsonSerializer.Deserialize<List<UserInfo>>(response.Content, options) ?? new List<UserInfo>();
                     ListaUsuarios.ItemsSource = _usuarios;
                 }
+
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error detallado: {ex.Message}");
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
                 await DisplayAlert("Error", $"Error al cargar usuarios: {ex.Message}", "OK");
                 ListaUsuarios.ItemsSource = new List<UserInfo>();
             }
@@ -64,6 +68,9 @@ namespace PurificadoraApp.Views
 
             try
             {
+                IndicatorCarga.IsVisible = true;
+                IndicatorCarga.IsRunning = true;
+
                 var response = await _supabaseAdminClient.Rpc("create_user", new
                 {
                     p_email = email,
@@ -72,11 +79,16 @@ namespace PurificadoraApp.Views
                     p_rol = rol
                 });
 
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
+
                 await DisplayAlert("Éxito", $"Usuario {email} creado correctamente", "OK");
-                CargarUsuarios(); // Recargar lista
+                CargarUsuarios();
             }
             catch (Exception ex)
             {
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
                 await DisplayAlert("Error", $"No se pudo crear el usuario: {ex.Message}", "OK");
             }
         }
@@ -91,11 +103,10 @@ namespace PurificadoraApp.Views
             string nuevoNombre = null;
             string nuevoRol = null;
 
-            // Editar nombre - con validación de cancelar
             var nombreResult = await DisplayPromptAsync("Editar Usuario", "Nombre:",
                 initialValue: usuario.Nombre, cancel: "Cancelar");
 
-            if (nombreResult != null) // Usuario no canceló
+            if (nombreResult != null)
             {
                 if (string.IsNullOrWhiteSpace(nombreResult))
                 {
@@ -110,10 +121,9 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló, salir
+                return;
             }
 
-            // Editar rol
             var rolResult = await DisplayActionSheet("Rol del usuario", "Cancelar", null, "Repartidor", "Admin");
             if (rolResult != "Cancelar")
             {
@@ -125,14 +135,16 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló, salir
+                return;
             }
 
-            // Solo actualizar si hay cambios
             if (hayCambios)
             {
                 try
                 {
+                    IndicatorCarga.IsVisible = true;
+                    IndicatorCarga.IsRunning = true;
+
                     await _supabaseAdminClient.Rpc("update_user", new
                     {
                         p_user_id = usuario.Id,
@@ -140,11 +152,16 @@ namespace PurificadoraApp.Views
                         p_rol = nuevoRol
                     });
 
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
+
                     await DisplayAlert("Éxito", "Usuario actualizado correctamente", "OK");
                     CargarUsuarios();
                 }
                 catch (Exception ex)
                 {
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
                     await DisplayAlert("Error", $"No se pudo actualizar: {ex.Message}", "OK");
                 }
             }
@@ -165,12 +182,21 @@ namespace PurificadoraApp.Views
             {
                 try
                 {
+                    IndicatorCarga.IsVisible = true;
+                    IndicatorCarga.IsRunning = true;
+
                     await _supabaseAdminClient.Rpc("delete_user", new { p_user_id = usuario.Id });
+
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
+
                     await DisplayAlert("Éxito", "Usuario eliminado correctamente", "OK");
                     CargarUsuarios();
                 }
                 catch (Exception ex)
                 {
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
                     await DisplayAlert("Error", $"No se pudo eliminar: {ex.Message}", "OK");
                 }
             }

@@ -7,7 +7,6 @@ using System.Diagnostics;
 
 namespace PurificadoraApp.Services
 {
-    // Clase que representa la tabla 'entregas' en Supabase
     [Supabase.Postgrest.Attributes.Table("entregas")]
     public class EntregaRemota : BaseModel
     {
@@ -47,7 +46,6 @@ namespace PurificadoraApp.Services
             _localDbService = localDbService;
         }
 
-        // Verificar si hay conexión a internet
         public async Task<bool> HasInternetConnection()
         {
             try
@@ -61,13 +59,11 @@ namespace PurificadoraApp.Services
             }
         }
 
-        // Sincronizar entregas actualizadas (modificadas localmente) - NUEVAS Y EDITADAS
         public async Task<int> SyncUpdatedDeliveries()
         {
             if (!await HasInternetConnection())
                 return 0;
 
-            // Obtener entregas pendientes (incluye las editadas)
             var pendientes = await _localDbService.GetEntregasPendientes();
             int sincronizados = 0;
 
@@ -79,7 +75,6 @@ namespace PurificadoraApp.Services
 
                     if (!string.IsNullOrEmpty(entregaLocal.IdRemoto))
                     {
-                        // ACTUALIZAR existente en Supabase
                         var entregaRemota = new EntregaRemota
                         {
                             Id = entregaLocal.IdRemoto,
@@ -97,7 +92,6 @@ namespace PurificadoraApp.Services
                     }
                     else
                     {
-                        // Insertar nueva
                         var entregaRemota = new EntregaRemota
                         {
                             RepartidorId = entregaLocal.RepartidorId,
@@ -114,7 +108,6 @@ namespace PurificadoraApp.Services
                         Debug.WriteLine($"  Insertado en Supabase - Nuevo ID: {response.Model?.Id}");
                     }
 
-                    // Marcar como sincronizado
                     await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1);
                     sincronizados++;
                 }
@@ -128,7 +121,6 @@ namespace PurificadoraApp.Services
             return sincronizados;
         }
 
-        // Descargar entregas del administrador (BAJAR)
         public async Task<int> SyncAdminDeliveries()
         {
             if (!await HasInternetConnection())
@@ -136,24 +128,21 @@ namespace PurificadoraApp.Services
 
             try
             {
-                // Obtener entregas de Supabase (solo últimas 30 días)
                 var desde = DateTime.Now.AddDays(-30);
-
                 var response = await _supabaseClient
                     .From<EntregaRemota>()
                     .Where(x => x.FechaHoraRegistro >= desde)
                     .Get();
 
                 var entregasRemotas = response.Models;
-                int descargados = 0;
+                Debug.WriteLine($"Encontradas {entregasRemotas.Count} entregas en Supabase");
 
+                int descargados = 0;
                 foreach (var item in entregasRemotas)
                 {
-                    // Verificar si ya existe localmente para no duplicar
                     var existentes = await _localDbService.GetAllEntregas();
                     if (!existentes.Any(e => e.IdRemoto == item.Id))
                     {
-                        // Guardar en SQLite local (como referencia para el repartidor)
                         var entregaLocal = new EntregaLocal
                         {
                             IdRemoto = item.Id,
@@ -163,7 +152,7 @@ namespace PurificadoraApp.Services
                             Direccion = item.Direccion,
                             CantidadGarrafones = item.CantidadGarrafones,
                             FechaHoraRegistro = item.FechaHoraRegistro,
-                            EstadoSync = 1, // Ya sincronizado
+                            EstadoSync = 1,
                             Version = item.Version
                         };
 
@@ -172,62 +161,22 @@ namespace PurificadoraApp.Services
                     }
                 }
 
+                Debug.WriteLine($"Nuevas entregas guardadas: {descargados}");
                 return descargados;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al descargar: {ex.Message}");
+                Debug.WriteLine($"Error al descargar: {ex.Message}");
                 return 0;
             }
         }
 
-        // Sincronización completa
+        // SyncAll original (sin clientes)
         public async Task<(int subidos, int bajados)> SyncAll()
         {
             var subidos = await SyncUpdatedDeliveries();
             var bajados = await SyncAdminDeliveries();
             return (subidos, bajados);
-        }
-
-        // Descargar clientes desde Supabase
-        public async Task<int> SyncClientes()
-        {
-            if (!await HasInternetConnection())
-                return 0;
-
-            try
-            {
-                var response = await _supabaseClient.Rpc("get_all_clientes", new { });
-
-                if (response.Content != null)
-                {
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var clientes = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
-
-                    // Guardar clientes en SQLite local (crear tabla ClientesLocal)
-                    foreach (var cliente in clientes)
-                    {
-                        await _localDbService.GuardarCliente(cliente);
-                    }
-
-                    return clientes.Count;
-                }
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error al descargar clientes: {ex.Message}");
-                return 0;
-            }
-        }
-
-        // Modificar SyncAll para incluir clientes
-        public async Task<(int subidos, int bajados, int clientes)> SyncAll()
-        {
-            var subidos = await SyncUpdatedDeliveries();
-            var bajados = await SyncAdminDeliveries();
-            var clientes = await SyncClientes();
-            return (subidos, bajados, clientes);
         }
     }
 }

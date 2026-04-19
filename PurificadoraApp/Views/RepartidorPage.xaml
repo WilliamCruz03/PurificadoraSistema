@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PurificadoraApp.Views.RepartidorPage"
              Title="Registro de Entregas"
-             BackgroundColor="#f5f5f5">
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1a1a1a}">
 
     <Grid RowDefinitions="Auto,Auto,*">
 
@@ -11,10 +11,10 @@
         <Grid Grid.Row="0" Padding="10" ColumnDefinitions="*,Auto,Auto" BackgroundColor="#2c3e50">
             <Label x:Name="LblRepartidorNombre" Text="Cargando..." TextColor="White" VerticalOptions="Center"/>
             <Button Grid.Column="1" Text="🔄" BackgroundColor="Transparent" 
-            TextColor="White" FontSize="18" Clicked="OnSyncManualClicked"
-            IsVisible="{Binding IsConnected}"/>
-            <Button Grid.Column="2" Text="Salir" BackgroundColor="Transparent" 
-            TextColor="White" FontSize="18" Clicked="OnLogoutClicked"/>
+                    TextColor="White" FontSize="18" Clicked="OnSyncManualClicked"
+                    IsVisible="{Binding IsConnected}"/>
+            <Button Grid.Column="2" Text="🚪" BackgroundColor="Transparent" 
+                    TextColor="White" FontSize="18" Clicked="OnLogoutClicked"/>
             <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="10">
                 <Image x:Name="ImgConexion" Source="cloud_off.png" HeightRequest="20"/>
                 <Label x:Name="LblEstadoConexion" Text="Sin conexión" TextColor="Red"/>
@@ -28,13 +28,15 @@
                        FontSize="24" 
                        FontAttributes="Bold"
                        HorizontalOptions="Center"
-                       TextColor="#2c3e50"/>
+                       TextColor="{AppThemeBinding Light=#2c3e50, Dark=#ffffff}"/>
 
                 <!-- Buscador de clientes -->
-                <Label Text="Buscar Cliente" FontAttributes="Bold"/>
+                <Label Text="Buscar Cliente" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
                 <SearchBar x:Name="SearchBarClientes" 
                            Placeholder="Buscar cliente por nombre o teléfono..."
-                           TextChanged="OnBuscarClienteChanged"/>
+                           TextChanged="OnBuscarClienteChanged"
+                           BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"/>
 
                 <!-- Lista de resultados de clientes -->
                 <CollectionView x:Name="ListaClientesResultados" 
@@ -44,12 +46,15 @@
                                 SelectionChanged="OnClienteSeleccionado">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="10" BackgroundColor="White" Margin="0,2">
+                            <Grid Padding="10" BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}" Margin="0,2">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <VerticalStackLayout>
-                                        <Label Text="{Binding NombreCompleto}" FontAttributes="Bold"/>
-                                        <Label Text="{Binding Direccion}" FontSize="12" TextColor="Gray"/>
-                                        <Label Text="{Binding Telefono}" FontSize="12" TextColor="Gray"/>
+                                        <Label Text="{Binding NombreCompleto}" FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+                                        <Label Text="{Binding Direccion}" FontSize="12" 
+                                               TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
+                                        <Label Text="{Binding Telefono}" FontSize="12" 
+                                               TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
                                     </VerticalStackLayout>
                                     <Label Text="➡️" Grid.Column="1" VerticalOptions="Center" FontSize="20"/>
                                 </Grid>
@@ -59,11 +64,14 @@
                 </CollectionView>
 
                 <!-- Cliente seleccionado -->
-                <Frame x:Name="FrameClienteSeleccionado" BorderColor="#27ae60" CornerRadius="10" IsVisible="False">
+                <Frame x:Name="FrameClienteSeleccionado" BorderColor="#27ae60" CornerRadius="10" IsVisible="False"
+                       BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}">
                     <VerticalStackLayout>
                         <Label Text="Cliente Seleccionado" FontAttributes="Bold" TextColor="#27ae60"/>
-                        <Label x:Name="LblClienteSeleccionado" FontSize="16"/>
-                        <Label x:Name="LblDireccionSeleccionada" FontSize="14" TextColor="Gray"/>
+                        <Label x:Name="LblClienteSeleccionado" FontSize="16"
+                               TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+                        <Label x:Name="LblDireccionSeleccionada" FontSize="14" 
+                               TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
                         <Button Text="Cambiar Cliente" Clicked="OnCambiarCliente" BackgroundColor="Gray" TextColor="White"/>
                     </VerticalStackLayout>
                 </Frame>
@@ -73,7 +81,8 @@
                        Placeholder="Cantidad de garrafones" 
                        PlaceholderColor="Gray"
                        Keyboard="Numeric"
-                       BackgroundColor="#f0f0f0"/>
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
 
                 <!-- Botón Registrar -->
                 <Button x:Name="BtnRegistrar" 
@@ -98,15 +107,19 @@
                 <Label Text="Entregas Pendientes de Sincronizar" 
                        FontSize="16" 
                        FontAttributes="Bold"
-                       Margin="0,20,0,5"/>
+                       Margin="0,20,0,5"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
 
                 <CollectionView x:Name="ListaPendientes" 
                                 HeightRequest="250">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" BackgroundColor="White" Margin="5">
-                                <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
-                                <Label Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray">
+                            <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" 
+                                  BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}" Margin="5">
+                                <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"
+                                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+                                <Label Grid.Row="1" Grid.Column="0" FontSize="12" 
+                                       TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}">
                                     <Label.Text>
                                         <MultiBinding StringFormat="{}{0} garrafones - {1}">
                                             <Binding Path="CantidadGarrafones"/>
@@ -122,5 +135,10 @@
 
             </VerticalStackLayout>
         </ScrollView>
+
+        <!-- ActivityIndicator de carga - Agregar esto al final del Grid, antes de </Grid> -->
+        <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="3" IsVisible="False" IsRunning="False" 
+                   HorizontalOptions="Center" VerticalOptions="Center"
+                   Color="{AppThemeBinding Light=#2c3e50, Dark=#3498db}"/>
     </Grid>
 </ContentPage>

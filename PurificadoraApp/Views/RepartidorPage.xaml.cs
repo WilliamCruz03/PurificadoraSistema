@@ -97,24 +97,8 @@ namespace PurificadoraApp.Views
 
             try
             {
-                // Primero buscar en clientes locales
-                var clientesLocales = await _localDbService.GetAllClientes();
-                _clientesEncontrados = clientesLocales
-                    .Where(c => c.NombreCompleto.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase) ||
-                               (c.Telefono?.Contains(e.NewTextValue) ?? false))
-                    .Select(c => new Cliente
-                    {
-                        Id = c.Id,
-                        Nombre = c.Nombre,
-                        Apellidos = c.Apellidos,
-                        Direccion = c.Direccion,
-                        Telefono = c.Telefono,
-                        Email = c.Email
-                    })
-                    .ToList();
-
-                // Si no hay resultados en local, buscar en Supabase
-                if (!_clientesEncontrados.Any() && await _syncService.HasInternetConnection())
+                // Buscar en Supabase
+                if (await _syncService.HasInternetConnection())
                 {
                     var response = await _supabaseClient.Rpc("search_clientes", new { search_term = e.NewTextValue });
                     if (response.Content != null)
@@ -199,14 +183,19 @@ namespace PurificadoraApp.Views
 
             await DisplayAlert("Éxito", "Entrega registrada correctamente", "OK");
         }
-        // Evento para el botón - debe ser async void
+
         private async void OnSincronizarClicked(object sender, EventArgs e)
         {
+            IndicatorCarga.IsVisible = true;
+            IndicatorCarga.IsRunning = true;
+
             var tieneInternet = await _syncService.HasInternetConnection();
             if (!tieneInternet)
             {
                 await DisplayAlert("Sin conexión",
                     "No hay internet. Las entregas se sincronizarán cuando haya conexión.", "OK");
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
                 return;
             }
 
@@ -221,11 +210,13 @@ namespace PurificadoraApp.Views
             CargarEntregasPendientes();
             await VerificarConexion();
 
+            IndicatorCarga.IsVisible = false;
+            IndicatorCarga.IsRunning = false;
+
             await DisplayAlert("Sincronización Completa",
                 $"Entregas subidas: {subidos}\nDatos descargados: {bajados}", "OK");
         }
 
-        // Método para conectividad
         private async Task OnConnectivityChanged()
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -237,16 +228,15 @@ namespace PurificadoraApp.Views
                     var pendientes = await _localDbService.GetEntregasPendientes();
                     if (pendientes.Any())
                     {
-                        OnSincronizarClicked(null, null);  // Sin await, es async void
+                        OnSincronizarClicked(null, null);
                     }
                 }
             });
         }
 
-        // Botón manual de sincronización
         private void OnSyncManualClicked(object sender, EventArgs e)
         {
-            OnSincronizarClicked(sender, e);  // Llamada directa, sin asignación
+            OnSincronizarClicked(sender, e);
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)

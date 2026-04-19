@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PurificadoraApp.Views.GestionUsuariosPage"
              Title="Gestión de Usuarios"
-             BackgroundColor="#f5f5f5">
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1a1a1a}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -21,17 +21,28 @@
         <CollectionView x:Name="ListaUsuarios" Grid.Row="1">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Padding="10" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" BackgroundColor="White" Margin="5">
-                        <Label Text="{Binding Email}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
-                        <Label Text="{Binding Nombre}" Grid.Row="1" Grid.Column="0" FontSize="14" TextColor="Gray"/>
-                        <Label Text="{Binding Rol}" Grid.Row="2" Grid.Column="0" FontSize="12" TextColor="#2c3e50"/>
+                    <Grid Padding="10" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" 
+                          BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}" Margin="5">
+                        <Label Text="{Binding Email}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"
+                               TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+                        <Label Text="{Binding Nombre}" Grid.Row="1" Grid.Column="0" FontSize="14" 
+                               TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
+                        <Label Text="{Binding Rol}" Grid.Row="2" Grid.Column="0" FontSize="12" TextColor="#3498db"/>
                         <StackLayout Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                            <Button Text="✏️" BackgroundColor="Transparent" Clicked="OnEditarClicked" CommandParameter="{Binding .}"/>
-                            <Button Text="🗑️" BackgroundColor="Transparent" TextColor="Red" Clicked="OnEliminarClicked" CommandParameter="{Binding .}"/>
+                            <Button Text="✏️" BackgroundColor="Transparent" 
+                                    TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"
+                                    Clicked="OnEditarClicked" CommandParameter="{Binding .}"/>
+                            <Button Text="🗑️" BackgroundColor="Transparent" TextColor="Red" 
+                                    Clicked="OnEliminarClicked" CommandParameter="{Binding .}"/>
                         </StackLayout>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
+        <!-- ActivityIndicator de carga -->
+        <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="2" IsVisible="False" IsRunning="False" 
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           Color="{AppThemeBinding Light=#2c3e50, Dark=#3498db}"/>
     </Grid>
 </ContentPage>

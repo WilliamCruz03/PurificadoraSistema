@@ -34,7 +34,7 @@ namespace PurificadoraApp.Services
                 .ToListAsync();
         }
 
-        // UN SOLO método ActualizarEstadoSync (con 4 parámetros, todos opcionales)
+        // Actualizar estado de sincronización
         public async Task<int> ActualizarEstadoSync(int idLocal, int estado, string? idRemoto = null, string? errorMessage = null)
         {
             var entrega = await _database.FindAsync<EntregaLocal>(idLocal);
@@ -51,7 +51,7 @@ namespace PurificadoraApp.Services
             return 0;
         }
 
-        // Obtener todas las entregas (para el administrador local)
+        // Obtener todas las entregas
         public async Task<List<EntregaLocal>> GetAllEntregas()
         {
             var entregas = await _database.Table<EntregaLocal>()
@@ -67,18 +67,17 @@ namespace PurificadoraApp.Services
             return entregas;
         }
 
-        // Eliminar una entrega (opcional, para el administrador)
+        // Eliminar una entrega
         public async Task<int> EliminarEntrega(int idLocal)
         {
             return await _database.DeleteAsync<EntregaLocal>(idLocal);
         }
-        // Actualizar una entrega existente
+
         // Actualizar una entrega existente
         public async Task<int> ActualizarEntrega(EntregaLocal entrega)
         {
             try
             {
-                // Verificar que la entrega existe
                 var existe = await _database.FindAsync<EntregaLocal>(entrega.IdLocal);
                 if (existe == null)
                 {
@@ -91,16 +90,12 @@ namespace PurificadoraApp.Services
                 Debug.WriteLine($"  Cantidad: {entrega.CantidadGarrafones}");
                 Debug.WriteLine($"  Direccion: {entrega.Direccion}");
 
-                // Actualizar SOLO los campos permitidos
                 existe.ClienteId = entrega.ClienteId;
                 existe.ClienteNombre = entrega.ClienteNombre;
                 existe.CantidadGarrafones = entrega.CantidadGarrafones;
                 existe.Direccion = entrega.Direccion;
                 existe.UpdatedAt = DateTime.Now;
-
-                // CRUCIAL: Marcar como pendiente de sincronización SIEMPRE
-                existe.EstadoSync = 0; // Pendiente de re-sincronizar
-                Debug.WriteLine("Entrega marcada como pendiente de sincronización");
+                existe.EstadoSync = 0; // Marcar como pendiente
 
                 var resultado = await _database.UpdateAsync(existe);
                 Debug.WriteLine($"Resultado update: {resultado}");
@@ -114,43 +109,19 @@ namespace PurificadoraApp.Services
             }
         }
 
-        // En LocalDbService.cs, agregar:
-        private async Task InitializeDatabase()
+        // Obtener todos los clientes (para LicenciaService)
+        public async Task<List<Cliente>> GetAllClientes()
         {
-            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "purificadora.db3");
-            _database = new SQLiteAsyncConnection(dbPath);
-            await _database.CreateTableAsync<EntregaLocal>();
-            await _database.CreateTableAsync<ClienteLocal>(); // Nueva tabla
-        }
-
-        // Nuevo modelo ClienteLocal
-        public class ClienteLocal
-        {
-            [PrimaryKey]
-            public string Id { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-            public string? Apellidos { get; set; }
-            public string Direccion { get; set; } = string.Empty;
-            public string? Telefono { get; set; }
-            public string? Email { get; set; }
-            public DateTime CreatedAt { get; set; }
-            public DateTime UpdatedAt { get; set; }
-
-            public string NombreCompleto => string.IsNullOrWhiteSpace(Apellidos)
-                ? Nombre
-                : $"{Nombre} {Apellidos}";
-        }
-
-        // Guardar cliente
-        public async Task<int> GuardarCliente(ClienteLocal cliente)
-        {
-            return await _database.InsertOrReplaceAsync(cliente);
-        }
-
-        // Obtener todos los clientes
-        public async Task<List<ClienteLocal>> GetAllClientes()
-        {
-            return await _database.Table<ClienteLocal>().ToListAsync();
+            try
+            {
+                var clientes = await _database.Table<Cliente>().ToListAsync();
+                return clientes;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error en GetAllClientes: {ex.Message}");
+                return new List<Cliente>();
+            }
         }
     }
 }

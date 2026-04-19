@@ -21,6 +21,9 @@ namespace PurificadoraApp.Views
         {
             try
             {
+                IndicatorCarga.IsVisible = true;
+                IndicatorCarga.IsRunning = true;
+
                 object parameters;
                 string rpcFunction;
 
@@ -43,9 +46,14 @@ namespace PurificadoraApp.Views
                     _clientes = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
                     ListaClientes.ItemsSource = _clientes;
                 }
+
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
             }
             catch (Exception ex)
             {
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
                 await DisplayAlert("Error", $"No se pudieron cargar clientes: {ex.Message}", "OK");
             }
         }
@@ -77,6 +85,9 @@ namespace PurificadoraApp.Views
 
             try
             {
+                IndicatorCarga.IsVisible = true;
+                IndicatorCarga.IsRunning = true;
+
                 await _supabaseAdminClient.Rpc("create_cliente", new
                 {
                     p_nombre = nombre,
@@ -86,11 +97,16 @@ namespace PurificadoraApp.Views
                     p_email = email ?? ""
                 });
 
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
+
                 await DisplayAlert("Éxito", "Cliente creado correctamente", "OK");
                 CargarClientes();
             }
             catch (Exception ex)
             {
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
                 await DisplayAlert("Error", $"No se pudo crear: {ex.Message}", "OK");
             }
         }
@@ -108,7 +124,6 @@ namespace PurificadoraApp.Views
             string nuevoTelefono = null;
             string nuevoEmail = null;
 
-            // Editar nombre - validar cancelar
             var nombreResult = await DisplayPromptAsync("Editar Cliente", "Nombre:",
                 initialValue: cliente.Nombre, cancel: "Cancelar");
 
@@ -127,10 +142,9 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló
+                return;
             }
 
-            // Editar apellidos (opcional)
             var apellidosResult = await DisplayPromptAsync("Editar Cliente", "Apellidos (opcional):",
                 initialValue: cliente.Apellidos ?? "", cancel: "Cancelar");
 
@@ -144,10 +158,9 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló
+                return;
             }
 
-            // Editar dirección - obligatoria
             var direccionResult = await DisplayPromptAsync("Editar Cliente", "Dirección:",
                 initialValue: cliente.Direccion, cancel: "Cancelar");
 
@@ -166,10 +179,9 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló
+                return;
             }
 
-            // Editar teléfono (opcional)
             var telefonoResult = await DisplayPromptAsync("Editar Cliente", "Teléfono (opcional):",
                 initialValue: cliente.Telefono ?? "", cancel: "Cancelar");
 
@@ -183,10 +195,9 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló
+                return;
             }
 
-            // Editar email (opcional)
             var emailResult = await DisplayPromptAsync("Editar Cliente", "Email (opcional):",
                 initialValue: cliente.Email ?? "", keyboard: Keyboard.Email, cancel: "Cancelar");
 
@@ -200,14 +211,16 @@ namespace PurificadoraApp.Views
             }
             else
             {
-                return; // Canceló
+                return;
             }
 
-            // Solo actualizar si hay cambios
             if (hayCambios)
             {
                 try
                 {
+                    IndicatorCarga.IsVisible = true;
+                    IndicatorCarga.IsRunning = true;
+
                     await _supabaseAdminClient.Rpc("update_cliente", new
                     {
                         p_id = cliente.Id,
@@ -218,11 +231,16 @@ namespace PurificadoraApp.Views
                         p_email = nuevoEmail ?? cliente.Email
                     });
 
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
+
                     await DisplayAlert("Éxito", "Cliente actualizado correctamente", "OK");
                     CargarClientes();
                 }
                 catch (Exception ex)
                 {
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
                     await DisplayAlert("Error", $"No se pudo actualizar: {ex.Message}", "OK");
                 }
             }
@@ -243,12 +261,21 @@ namespace PurificadoraApp.Views
             {
                 try
                 {
+                    IndicatorCarga.IsVisible = true;
+                    IndicatorCarga.IsRunning = true;
+
                     await _supabaseAdminClient.Rpc("delete_cliente", new { p_id = cliente.Id });
+
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
+
                     await DisplayAlert("Éxito", "Cliente eliminado", "OK");
                     CargarClientes();
                 }
                 catch (Exception ex)
                 {
+                    IndicatorCarga.IsVisible = false;
+                    IndicatorCarga.IsRunning = false;
                     await DisplayAlert("Error", ex.Message, "OK");
                 }
             }

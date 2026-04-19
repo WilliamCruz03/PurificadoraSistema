@@ -121,7 +121,7 @@ namespace PurificadoraApp.ViewModels
                         Rol = rol,
                         FechaInicio = DateTime.Now
                     };
-                    // En la parte del login, después de obtener la sesión, agrega:
+
                     Debug.WriteLine($"Usuario ID: {session.User.Id}");
                     Debug.WriteLine($"Email: {session.User.Email}");
                     Debug.WriteLine($"Metadata: {session.User.UserMetadata}");

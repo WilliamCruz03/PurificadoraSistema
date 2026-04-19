@@ -1,4 +1,4 @@
-using PurificadoraApp.Models;
+ï»¿using PurificadoraApp.Models;
 using PurificadoraApp.Services;
 using System.ComponentModel;
 using System.Text.Json;
@@ -10,21 +10,16 @@ namespace PurificadoraApp.Views
     {
         private readonly LocalDbService _localDbService;
         private readonly Supabase.Client _supabaseClient;
+        private readonly SyncService _syncService;
         private List<EntregaLocal> _todasEntregas;
-
-
-        public new event PropertyChangedEventHandler PropertyChanged;
-
-        protected new virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        private bool _isNavigating = false;
 
         public AdminDashboardPage()
         {
             InitializeComponent();
             _localDbService = MauiProgram.GetService<LocalDbService>();
             _supabaseClient = MauiProgram.GetService<Supabase.Client>();
+            _syncService = MauiProgram.GetService<SyncService>();
             DateFechaInicio.Date = DateTime.Now.AddDays(-30);
             DateFechaFin.Date = DateTime.Now;
             CargarDatos();
@@ -32,32 +27,98 @@ namespace PurificadoraApp.Views
 
         private async void CargarDatos()
         {
+            Debug.WriteLine("CargarDatos: Iniciando carga desde DB local...");
             _todasEntregas = await _localDbService.GetAllEntregas();
+            Debug.WriteLine($"CargarDatos: Se encontraron {_todasEntregas.Count} entregas");
+
             AplicarFiltros();
             CalcularEstadisticas();
             CargarRepartidores();
+            DibujarGrafico();
+
+            ListaEntregas.ItemsSource = null;
+            ListaEntregas.ItemsSource = _todasEntregas.OrderByDescending(e => e.FechaHoraRegistro).ToList();
+            Debug.WriteLine("CargarDatos: Finalizado");
+        }
+
+        private void DibujarGrafico()
+        {
+            try
+            {
+                GraficoBarras.Children.Clear();
+
+                var ultimos7Dias = Enumerable.Range(0, 7)
+                    .Select(i => DateTime.Now.AddDays(-i).Date)
+                    .Reverse()
+                    .ToList();
+
+                var entregasPorDia = ultimos7Dias
+                    .Select(d => _todasEntregas.Count(e => e.FechaHoraRegistro.Date == d))
+                    .ToList();
+
+                var maxEntregas = entregasPorDia.Max() > 0 ? entregasPorDia.Max() : 1;
+
+                for (int i = 0; i < entregasPorDia.Count; i++)
+                {
+                    var altura = (entregasPorDia[i] * 120) / maxEntregas;
+                    altura = altura < 20 && entregasPorDia[i] > 0 ? 20 : altura;
+
+                    var barra = new VerticalStackLayout
+                    {
+                        HorizontalOptions = LayoutOptions.FillAndExpand,
+                        VerticalOptions = LayoutOptions.End,
+                        Spacing = 5
+                    };
+
+                    barra.Children.Add(new BoxView
+                    {
+                        HeightRequest = altura,
+                        WidthRequest = 30,
+                        BackgroundColor = Color.FromArgb("#3498db"),
+                        CornerRadius = 5,
+                        HorizontalOptions = LayoutOptions.Center
+                    });
+
+                    barra.Children.Add(new Label
+                    {
+                        Text = ultimos7Dias[i].ToString("dd/MM"),
+                        FontSize = 10,
+                        TextColor = App.Current.UserAppTheme == AppTheme.Dark ? Colors.White : Colors.Black,
+                        HorizontalOptions = LayoutOptions.Center
+                    });
+
+                    barra.Children.Add(new Label
+                    {
+                        Text = entregasPorDia[i].ToString(),
+                        FontSize = 10,
+                        FontAttributes = FontAttributes.Bold,
+                        TextColor = Colors.Green,
+                        HorizontalOptions = LayoutOptions.Center
+                    });
+
+                    GraficoBarras.Children.Add(barra);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error en grÃ¡fico: {ex.Message}");
+            }
         }
 
         private void AplicarFiltros()
         {
             var filtradas = _todasEntregas.AsEnumerable();
 
-            // Filtro por repartidor
             if (PickerFiltroRepartidor.SelectedIndex > 0)
             {
                 var repartidorSeleccionado = PickerFiltroRepartidor.SelectedItem as string;
                 filtradas = filtradas.Where(e => e.RepartidorNombre == repartidorSeleccionado);
             }
 
-            // Filtro por fechas
             filtradas = filtradas.Where(e => e.FechaHoraRegistro.Date >= DateFechaInicio.Date);
             filtradas = filtradas.Where(e => e.FechaHoraRegistro.Date <= DateFechaFin.Date);
 
-            var listaFiltrada = filtradas.OrderByDescending(e => e.FechaHoraRegistro).ToList();
-
-            // Forzar refresco
-            ListaEntregas.ItemsSource = null;
-            ListaEntregas.ItemsSource = listaFiltrada;
+            ListaEntregas.ItemsSource = filtradas.OrderByDescending(e => e.FechaHoraRegistro).ToList();
         }
 
         private void CalcularEstadisticas()
@@ -66,6 +127,10 @@ namespace PurificadoraApp.Views
             LblTotalEntregas.Text = entregas.Count.ToString();
             LblTotalGarrafones.Text = entregas.Sum(e => e.CantidadGarrafones).ToString();
             LblRepartidores.Text = _todasEntregas.Select(e => e.RepartidorId).Distinct().Count().ToString();
+
+            var diasActivos = entregas.Select(e => e.FechaHoraRegistro.Date).Distinct().Count();
+            var promedioDiario = diasActivos > 0 ? entregas.Count / diasActivos : 0;
+            LblPromedioDiario.Text = promedioDiario.ToString();
         }
 
         private void CargarRepartidores()
@@ -78,7 +143,53 @@ namespace PurificadoraApp.Views
 
         private async void OnFiltroChanged(object sender, EventArgs e)
         {
-            await RecargarDatosCompletos();
+            AplicarFiltros();
+            CalcularEstadisticas();
+        }
+
+        private void OnFiltroHoyClicked(object sender, EventArgs e)
+        {
+            DateFechaInicio.Date = DateTime.Now.Date;
+            DateFechaFin.Date = DateTime.Now.Date;
+            OnFiltroChanged(null, null);
+        }
+
+        private void OnFiltroSemanaClicked(object sender, EventArgs e)
+        {
+            DateFechaInicio.Date = DateTime.Now.AddDays(-7).Date;
+            DateFechaFin.Date = DateTime.Now.Date;
+            OnFiltroChanged(null, null);
+        }
+
+        private void OnFiltroMesClicked(object sender, EventArgs e)
+        {
+            DateFechaInicio.Date = DateTime.Now.AddDays(-30).Date;
+            DateFechaFin.Date = DateTime.Now.Date;
+            OnFiltroChanged(null, null);
+        }
+
+        private void OnFiltroTodosClicked(object sender, EventArgs e)
+        {
+            DateFechaInicio.Date = new DateTime(2000, 1, 1);
+            DateFechaFin.Date = DateTime.Now.Date;
+            OnFiltroChanged(null, null);
+        }
+
+        private void OnBuscarTextoChanged(object sender, TextChangedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(e.NewTextValue))
+            {
+                AplicarFiltros();
+            }
+            else
+            {
+                var filtradas = _todasEntregas
+                    .Where(x => x.ClienteNombre.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase) ||
+                               x.RepartidorNombre.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(x => x.FechaHoraRegistro)
+                    .ToList();
+                ListaEntregas.ItemsSource = filtradas;
+            }
         }
 
         private async void OnEntregaSeleccionada(object sender, SelectionChangedEventArgs e)
@@ -96,8 +207,8 @@ namespace PurificadoraApp.Views
                     {
                         entrega.CantidadGarrafones = cantidad;
                         await _localDbService.ActualizarEntrega(entrega);
-                        await RecargarDatosCompletos();
-                        await DisplayAlert("Éxito", "Cantidad actualizada", "OK");
+                        CargarDatos();
+                        await DisplayAlert("Ã‰xito", "Cantidad actualizada", "OK");
                     }
                 }
                 else if (action == "Cambiar cliente")
@@ -112,22 +223,20 @@ namespace PurificadoraApp.Views
                             entrega.ClienteNombre = nuevoCliente.NombreCompleto;
                             entrega.Direccion = nuevoCliente.Direccion;
                             await _localDbService.ActualizarEntrega(entrega);
-                            await RecargarDatosCompletos();
-                            await DisplayAlert("Éxito", "Cliente cambiado correctamente", "OK");
+                            CargarDatos();
+                            await DisplayAlert("Ã‰xito", "Cliente cambiado correctamente", "OK");
                         }
                     }
                 }
                 else if (action == "Eliminar")
                 {
-                    var confirmar = await DisplayAlert("Confirmar", $"¿Eliminar entrega de {entrega.ClienteNombre}?", "Sí", "No");
+                    var confirmar = await DisplayAlert("Confirmar", $"Â¿Eliminar entrega de {entrega.ClienteNombre}?", "SÃ­", "No");
                     if (confirmar)
                     {
                         await _localDbService.EliminarEntrega(entrega.IdLocal);
-                        await RecargarDatosCompletos(); 
+                        CargarDatos();
                     }
                 }
-
-                // Limpiar selección
                 ListaEntregas.SelectedItem = null;
             }
         }
@@ -139,10 +248,8 @@ namespace PurificadoraApp.Views
             {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var listaClientes = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
-
                 var opciones = listaClientes.Select(c => c.NombreCompleto).ToArray();
                 var resultado = await DisplayActionSheet("Seleccionar Cliente", "Cancelar", null, opciones);
-
                 var clienteSeleccionado = listaClientes.FirstOrDefault(c => c.NombreCompleto == resultado);
                 return clienteSeleccionado?.Id ?? string.Empty;
             }
@@ -177,10 +284,9 @@ namespace PurificadoraApp.Views
                 if (!string.IsNullOrEmpty(nuevaCantidad) && int.TryParse(nuevaCantidad, out int cantidad) && cantidad > 0 && cantidad != entrega.CantidadGarrafones)
                 {
                     entrega.CantidadGarrafones = cantidad;
-                    var resultado = await _localDbService.ActualizarEntrega(entrega);
-                    Debug.WriteLine($"ActualizarEntrega resultado: {resultado}"); // Debería ser 1
-                    await RecargarDatosCompletos();
-                    await DisplayAlert("Éxito", "Cantidad actualizada localmente", "OK");
+                    await _localDbService.ActualizarEntrega(entrega);
+                    CargarDatos();
+                    await DisplayAlert("Ã‰xito", "Cantidad actualizada", "OK");
                 }
             }
             else if (action == "Cliente")
@@ -191,25 +297,15 @@ namespace PurificadoraApp.Views
                     var nuevoCliente = await ObtenerClientePorId(nuevoClienteId);
                     if (nuevoCliente != null)
                     {
-                        Debug.WriteLine($"Cliente seleccionado: {nuevoCliente.NombreCompleto}, ID: {nuevoCliente.Id}");
-
                         entrega.ClienteId = nuevoCliente.Id;
                         entrega.ClienteNombre = nuevoCliente.NombreCompleto;
                         entrega.Direccion = nuevoCliente.Direccion;
-
-                        var resultado = await _localDbService.ActualizarEntrega(entrega);
-                        Debug.WriteLine($"ActualizarEntrega resultado: {resultado}");
-
-                        await RecargarDatosCompletos();
-                        await DisplayAlert("Éxito", $"Cliente cambiado a: {nuevoCliente.NombreCompleto}", "OK");
+                        await _localDbService.ActualizarEntrega(entrega);
+                        CargarDatos();
+                        await DisplayAlert("Ã‰xito", $"Cliente cambiado a: {nuevoCliente.NombreCompleto}", "OK");
                     }
                 }
             }
-        }
-
-        private async void OnNuevoUsuarioClicked(object sender, EventArgs e)
-        {
-            await Navigation.PushAsync(new GestionUsuariosPage());
         }
 
         private async void OnGestionarUsuariosClicked(object sender, EventArgs e)
@@ -222,24 +318,67 @@ namespace PurificadoraApp.Views
             await Navigation.PushAsync(new ClientesPage());
         }
 
-        protected override async void OnAppearing()
+        private async void OnEstadisticasClicked(object sender, EventArgs e)
         {
-            base.OnAppearing();
-
-            // Forzar sincronización al abrir el dashboard
-            if (await _syncService.HasInternetConnection())
+            if (_isNavigating) return;
+            _isNavigating = true;
+            try
             {
-                var syncService = MauiProgram.GetService<SyncService>();
-                var (subidos, bajados, clientes) = await syncService.SyncAll();
-                Debug.WriteLine($"Sincronización inicial: Subidos={subidos}, Bajados={bajados}, Clientes={clientes}");
+                await Navigation.PushModalAsync(new EstadisticasPage());
+            }
+            finally
+            {
+                _isNavigating = false;
+            }
+        }
+
+        private async void OnSyncClicked(object sender, EventArgs e)
+        {
+            var boton = sender as Button;
+            IndicatorCarga.IsVisible = true;
+            IndicatorCarga.IsRunning = true;
+
+            if (boton != null)
+            {
+                boton.IsEnabled = false;
+                boton.Text = "ðŸ”„ Sincronizando...";
             }
 
-            CargarDatos();
+            try
+            {
+                var subidos = await _syncService.SyncUpdatedDeliveries();
+                var bajados = await _syncService.SyncAdminDeliveries();
+
+                if (subidos > 0 && bajados > 0)
+                    await DisplayAlert("SincronizaciÃ³n", $"âœ… Subidos: {subidos}\nðŸ“¥ Descargados: {bajados}", "OK");
+                else if (subidos > 0)
+                    await DisplayAlert("SincronizaciÃ³n", $"âœ… Subidos: {subidos} cambios", "OK");
+                else if (bajados > 0)
+                    await DisplayAlert("SincronizaciÃ³n", $"ðŸ“¥ Descargados: {bajados} registros", "OK");
+                else
+                    await DisplayAlert("SincronizaciÃ³n", "ðŸ“­ No hay cambios pendientes", "OK");
+
+                CargarDatos();
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"âŒ Error: {ex.Message}", "OK");
+            }
+            finally
+            {
+                IndicatorCarga.IsVisible = false;
+                IndicatorCarga.IsRunning = false;
+                if (boton != null)
+                {
+                    boton.IsEnabled = true;
+                    boton.Text = "ðŸ”„ Sincronizar";
+                }
+            }
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)
         {
-            var confirmar = await DisplayAlert("Cerrar Sesión", "¿Está seguro que desea cerrar sesión?", "Sí", "No");
+            var confirmar = await DisplayAlert("Cerrar SesiÃ³n", "Â¿EstÃ¡ seguro que desea cerrar sesiÃ³n?", "SÃ­", "No");
             if (confirmar)
             {
                 Preferences.Remove("usuario_actual");
@@ -248,75 +387,14 @@ namespace PurificadoraApp.Views
             }
         }
 
-        private async Task RecargarDatosCompletos()
+        protected override async void OnAppearing()
         {
-            Debug.WriteLine("RecargarDatosCompletos: Iniciando...");
-
-            // Guardar filtros actuales
-            var filtroRepartidor = PickerFiltroRepartidor.SelectedIndex > 0
-                ? PickerFiltroRepartidor.SelectedItem as string
-                : null;
-            var fechaInicio = DateFechaInicio.Date;
-            var fechaFin = DateFechaFin.Date;
-
-            // Recargar desde la base de datos local
-            _todasEntregas = await _localDbService.GetAllEntregas();
-            Debug.WriteLine($"Entregas cargadas: {_todasEntregas.Count}");
-
-            // Aplicar filtros
-            var filtradas = _todasEntregas.AsEnumerable();
-
-            if (!string.IsNullOrEmpty(filtroRepartidor))
+            base.OnAppearing();
+            if (await _syncService.HasInternetConnection())
             {
-                filtradas = filtradas.Where(e => e.RepartidorNombre == filtroRepartidor);
+                var bajados = await _syncService.SyncAdminDeliveries();
+                Debug.WriteLine($"Descargadas {bajados} entregas desde Supabase");
             }
-
-            filtradas = filtradas.Where(e => e.FechaHoraRegistro.Date >= fechaInicio);
-            filtradas = filtradas.Where(e => e.FechaHoraRegistro.Date <= fechaFin);
-
-            var listaFiltrada = filtradas.OrderByDescending(e => e.FechaHoraRegistro).ToList();
-
-            // FORZAR REFRESCO VISUAL
-            ListaEntregas.ItemsSource = null;
-            await Task.Delay(50); // Pequeña pausa para asegurar el refresco
-            ListaEntregas.ItemsSource = listaFiltrada;
-
-            // Recalcular estadísticas
-            CalcularEstadisticas();
-
-            // Recargar lista de repartidores (solo si es necesario)
-            if (PickerFiltroRepartidor.ItemsSource == null ||
-                PickerFiltroRepartidor.SelectedIndex == 0)
-            {
-                CargarRepartidores();
-            }
-
-            Debug.WriteLine($"RecargarDatosCompletos: Completado - {listaFiltrada.Count} entregas mostradas");
-        }
-
-        private async void OnSyncChangesClicked(object sender, EventArgs e)
-        {
-            var syncService = MauiProgram.GetService<SyncService>();
-            var (subidos, bajados) = await syncService.SyncAll();
-
-            await ToastService.ShowSyncResult(subidos, bajados);
-            await RecargarDatosCompletos();
-        }
-
-        private async void OnEstadisticasClicked(object sender, EventArgs e)
-        {
-            await Navigation.PushModalAsync(new EstadisticasPage());
-        }
-
-        private async void OnSyncNowClicked(object sender, EventArgs e)
-        {
-            var syncService = MauiProgram.GetService<SyncService>();
-            var (subidos, bajados, clientes) = await syncService.SyncAll();
-
-            await DisplayAlert("Sincronización",
-                $"Entregas subidas: {subidos}\nEntregas descargadas: {bajados}\nClientes descargados: {clientes}",
-                "OK");
-
             CargarDatos();
         }
     }
