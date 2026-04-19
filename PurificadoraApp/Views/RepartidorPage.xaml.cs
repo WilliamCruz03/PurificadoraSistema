@@ -25,29 +25,11 @@ namespace PurificadoraApp.Views
             _connectivityService = MauiProgram.GetService<ConnectivityService>();
 
             // Suscribirse a cambios de conectividad
-            _connectivityService.ConnectivityChanged += OnConnectivityChanged;
+            _connectivityService.ConnectivityChanged += async () => await OnConnectivityChanged();
 
             CargarDatosRepartidor();
             CargarEntregasPendientes();
-            VerificarConexion();
-        }
-        private async Task OnConnectivityChanged()
-        {
-            // Ejecutar en el hilo principal
-            await MainThread.InvokeOnMainThreadAsync(async () =>
-            {
-                await VerificarConexion();
-
-                // Si hay conexión, sincronizar automáticamente
-                if (_connectivityService.IsConnected)
-                {
-                    var pendientes = await _localDbService.GetEntregasPendientes();
-                    if (pendientes.Any())
-                    {
-                        await OnSincronizarClicked(null, null);
-                    }
-                }
-            });
+            _ = VerificarConexion();
         }
 
         private void CargarDatosRepartidor()
@@ -68,7 +50,7 @@ namespace PurificadoraApp.Views
             ListaPendientes.ItemsSource = pendientes;
         }
 
-        private async void VerificarConexion()
+        private async Task VerificarConexion()
         {
             var tieneInternet = await _syncService.HasInternetConnection();
             if (tieneInternet)
@@ -176,7 +158,7 @@ namespace PurificadoraApp.Views
 
             await DisplayAlert("Éxito", "Entrega registrada correctamente", "OK");
         }
-
+        // Evento para el botón - debe ser async void
         private async void OnSincronizarClicked(object sender, EventArgs e)
         {
             var tieneInternet = await _syncService.HasInternetConnection();
@@ -196,10 +178,34 @@ namespace PurificadoraApp.Views
             BtnSincronizar.Text = "Sincronizar Entregas";
 
             CargarEntregasPendientes();
-            VerificarConexion();
+            await VerificarConexion();
 
             await DisplayAlert("Sincronización Completa",
                 $"Entregas subidas: {subidos}\nDatos descargados: {bajados}", "OK");
+        }
+
+        // Método para conectividad
+        private async Task OnConnectivityChanged()
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await VerificarConexion();
+
+                if (_connectivityService.IsConnected)
+                {
+                    var pendientes = await _localDbService.GetEntregasPendientes();
+                    if (pendientes.Any())
+                    {
+                        OnSincronizarClicked(null, null);  // Sin await, es async void
+                    }
+                }
+            });
+        }
+
+        // Botón manual de sincronización
+        private void OnSyncManualClicked(object sender, EventArgs e)
+        {
+            OnSincronizarClicked(sender, e);  // Llamada directa, sin asignación
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)
@@ -211,11 +217,6 @@ namespace PurificadoraApp.Views
                 Preferences.Remove("access_token");
                 Application.Current.MainPage = new NavigationPage(new Views.LoginPage());
             }
-        }
-
-        private async void OnSyncManualClicked(object sender, EventArgs e)
-        {
-            await OnSincronizarClicked(sender, e);
         }
     }
 }

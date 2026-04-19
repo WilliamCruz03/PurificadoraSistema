@@ -8,9 +8,7 @@
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- Header con estadísticas -->
-        <Grid Grid.Row="0" BackgroundColor="#2c3e50" Padding="15" ColumnDefinitions="*,*,*">
-            <Button Grid.Column="3" Text="🚪" BackgroundColor="Transparent" 
-            TextColor="White" FontSize="20" Clicked="OnLogoutClicked"/>
+        <Grid Grid.Row="0" BackgroundColor="#2c3e50" Padding="15" ColumnDefinitions="*,*,*,Auto">
             <StackLayout Grid.Column="0" HorizontalOptions="Center">
                 <Label x:Name="LblTotalEntregas" Text="0" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center"/>
                 <Label Text="Total" TextColor="White" FontSize="12"/>
@@ -23,6 +21,9 @@
                 <Label x:Name="LblRepartidores" Text="0" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center"/>
                 <Label Text="Repartidores" TextColor="White" FontSize="12"/>
             </StackLayout>
+            <Button Grid.Column="3" Text="Salir" BackgroundColor="Transparent" 
+            TextColor="White" FontSize="16" VerticalOptions="Center"
+            Clicked="OnLogoutClicked"/>
         </Grid>
 
         <!-- Filtros -->

@@ -1,5 +1,7 @@
 using PurificadoraApp.Models;
 using PurificadoraApp.Services;
+using Supabase.Interfaces;
+using System.Text.Json;
 
 namespace PurificadoraApp.Views
 {
@@ -69,11 +71,11 @@ namespace PurificadoraApp.Views
         {
             if (e.CurrentSelection.FirstOrDefault() is EntregaLocal entrega)
             {
-                var action = await DisplayActionSheet($"Entrega: {entrega.ClienteNombre}", "Cancelar", null, "Editar cantidad", "Editar cliente", "Editar dirección", "Eliminar");
+                var action = await DisplayActionSheet($"Entrega: {entrega.ClienteNombre}", "Cancelar", null, "Editar cantidad", "Cambiar cliente", "Eliminar");
 
                 if (action == "Editar cantidad")
                 {
-                    var nuevaCantidad = await DisplayPromptAsync("Editar", "Nueva cantidad de garrafones:",
+                    var nuevaCantidad = await DisplayPromptAsync("Editar Cantidad", "Nueva cantidad de garrafones:",
                         initialValue: entrega.CantidadGarrafones.ToString(), keyboard: Keyboard.Numeric);
 
                     if (!string.IsNullOrEmpty(nuevaCantidad) && int.TryParse(nuevaCantidad, out int cantidad) && cantidad > 0)
@@ -84,30 +86,22 @@ namespace PurificadoraApp.Views
                         await DisplayAlert("Éxito", "Cantidad actualizada", "OK");
                     }
                 }
-                else if (action == "Editar cliente")
+                else if (action == "Cambiar cliente")
                 {
-                    var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre del cliente:",
-                        initialValue: entrega.ClienteNombre);
-
-                    if (!string.IsNullOrEmpty(nuevoCliente) && nuevoCliente != entrega.ClienteNombre)
+                    // Buscar nuevo cliente
+                    var nuevoClienteId = await SeleccionarCliente();
+                    if (!string.IsNullOrEmpty(nuevoClienteId))
                     {
-                        entrega.ClienteNombre = nuevoCliente;
-                        await _localDbService.ActualizarEntrega(entrega);
-                        CargarDatos();
-                        await DisplayAlert("Éxito", "Cliente actualizado", "OK");
-                    }
-                }
-                else if (action == "Editar dirección")
-                {
-                    var nuevaDireccion = await DisplayPromptAsync("Editar", "Nueva dirección:",
-                        initialValue: entrega.Direccion);
-
-                    if (!string.IsNullOrEmpty(nuevaDireccion) && nuevaDireccion != entrega.Direccion)
-                    {
-                        entrega.Direccion = nuevaDireccion;
-                        await _localDbService.ActualizarEntrega(entrega);
-                        CargarDatos();
-                        await DisplayAlert("Éxito", "Dirección actualizada", "OK");
+                        var nuevoCliente = await ObtenerClientePorId(nuevoClienteId);
+                        if (nuevoCliente != null)
+                        {
+                            entrega.ClienteId = nuevoCliente.Id;
+                            entrega.ClienteNombre = nuevoCliente.NombreCompleto;
+                            entrega.Direccion = nuevoCliente.Direccion;
+                            await _localDbService.ActualizarEntrega(entrega);
+                            CargarDatos();
+                            await DisplayAlert("Éxito", "Cliente cambiado correctamente", "OK");
+                        }
                     }
                 }
                 else if (action == "Eliminar")
@@ -120,6 +114,35 @@ namespace PurificadoraApp.Views
                     }
                 }
             }
+        }
+
+        private async Task<string> SeleccionarCliente()
+        {
+            var clientes = await _supabaseClient.Rpc("get_all_clientes", new { });
+            if (clientes.Content != null)
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var listaClientes = JsonSerializer.Deserialize<List<Cliente>>(clientes.Content, options) ?? new List<Cliente>();
+
+                var opciones = listaClientes.Select(c => c.NombreCompleto).ToArray();
+                var resultado = await DisplayActionSheet("Seleccionar Cliente", "Cancelar", null, opciones);
+
+                var clienteSeleccionado = listaClientes.FirstOrDefault(c => c.NombreCompleto == resultado);
+                return clienteSeleccionado?.Id ?? string.Empty;
+            }
+            return string.Empty;
+        }
+
+        private async Task<Cliente> ObtenerClientePorId(string id)
+        {
+            var response = await _supabaseClient.Rpc("get_all_clientes", new { });
+            if (response.Content != null)
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var clientes = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
+                return clientes.FirstOrDefault(c => c.Id == id);
+            }
+            return null;
         }
 
         private async void OnEditarClicked(object sender, EventArgs e)

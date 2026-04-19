@@ -101,30 +101,134 @@ namespace PurificadoraApp.Views
             var cliente = button?.CommandParameter as Cliente;
             if (cliente == null) return;
 
-            var nuevoNombre = await DisplayPromptAsync("Editar", "Nombre:", initialValue: cliente.Nombre);
-            var nuevoApellidos = await DisplayPromptAsync("Editar", "Apellidos:", initialValue: cliente.Apellidos ?? "");
-            var nuevaDireccion = await DisplayPromptAsync("Editar", "Dirección:", initialValue: cliente.Direccion);
-            var nuevoTelefono = await DisplayPromptAsync("Editar", "Teléfono:", initialValue: cliente.Telefono ?? "");
-            var nuevoEmail = await DisplayPromptAsync("Editar", "Email:", initialValue: cliente.Email ?? "");
+            bool hayCambios = false;
+            string nuevoNombre = null;
+            string nuevoApellidos = null;
+            string nuevaDireccion = null;
+            string nuevoTelefono = null;
+            string nuevoEmail = null;
 
-            try
+            // Editar nombre - validar cancelar
+            var nombreResult = await DisplayPromptAsync("Editar Cliente", "Nombre:",
+                initialValue: cliente.Nombre, cancel: "Cancelar");
+
+            if (nombreResult != null)
             {
-                await _supabaseAdminClient.Rpc("update_cliente", new
+                if (string.IsNullOrWhiteSpace(nombreResult))
                 {
-                    p_id = cliente.Id,
-                    p_nombre = nuevoNombre ?? cliente.Nombre,
-                    p_apellidos = nuevoApellidos,
-                    p_direccion = nuevaDireccion ?? cliente.Direccion,
-                    p_telefono = nuevoTelefono,
-                    p_email = nuevoEmail
-                });
-
-                await DisplayAlert("Éxito", "Cliente actualizado", "OK");
-                CargarClientes();
+                    await DisplayAlert("Error", "El nombre no puede estar vacío", "OK");
+                    return;
+                }
+                if (nombreResult != cliente.Nombre)
+                {
+                    nuevoNombre = nombreResult;
+                    hayCambios = true;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                await DisplayAlert("Error", ex.Message, "OK");
+                return; // Canceló
+            }
+
+            // Editar apellidos (opcional)
+            var apellidosResult = await DisplayPromptAsync("Editar Cliente", "Apellidos (opcional):",
+                initialValue: cliente.Apellidos ?? "", cancel: "Cancelar");
+
+            if (apellidosResult != null)
+            {
+                if (apellidosResult != cliente.Apellidos)
+                {
+                    nuevoApellidos = apellidosResult;
+                    hayCambios = true;
+                }
+            }
+            else
+            {
+                return; // Canceló
+            }
+
+            // Editar dirección - obligatoria
+            var direccionResult = await DisplayPromptAsync("Editar Cliente", "Dirección:",
+                initialValue: cliente.Direccion, cancel: "Cancelar");
+
+            if (direccionResult != null)
+            {
+                if (string.IsNullOrWhiteSpace(direccionResult))
+                {
+                    await DisplayAlert("Error", "La dirección no puede estar vacía", "OK");
+                    return;
+                }
+                if (direccionResult != cliente.Direccion)
+                {
+                    nuevaDireccion = direccionResult;
+                    hayCambios = true;
+                }
+            }
+            else
+            {
+                return; // Canceló
+            }
+
+            // Editar teléfono (opcional)
+            var telefonoResult = await DisplayPromptAsync("Editar Cliente", "Teléfono (opcional):",
+                initialValue: cliente.Telefono ?? "", cancel: "Cancelar");
+
+            if (telefonoResult != null)
+            {
+                if (telefonoResult != cliente.Telefono)
+                {
+                    nuevoTelefono = telefonoResult;
+                    hayCambios = true;
+                }
+            }
+            else
+            {
+                return; // Canceló
+            }
+
+            // Editar email (opcional)
+            var emailResult = await DisplayPromptAsync("Editar Cliente", "Email (opcional):",
+                initialValue: cliente.Email ?? "", keyboard: Keyboard.Email, cancel: "Cancelar");
+
+            if (emailResult != null)
+            {
+                if (emailResult != cliente.Email)
+                {
+                    nuevoEmail = emailResult;
+                    hayCambios = true;
+                }
+            }
+            else
+            {
+                return; // Canceló
+            }
+
+            // Solo actualizar si hay cambios
+            if (hayCambios)
+            {
+                try
+                {
+                    await _supabaseAdminClient.Rpc("update_cliente", new
+                    {
+                        p_id = cliente.Id,
+                        p_nombre = nuevoNombre ?? cliente.Nombre,
+                        p_apellidos = nuevoApellidos ?? cliente.Apellidos,
+                        p_direccion = nuevaDireccion ?? cliente.Direccion,
+                        p_telefono = nuevoTelefono ?? cliente.Telefono,
+                        p_email = nuevoEmail ?? cliente.Email
+                    });
+
+                    await DisplayAlert("Éxito", "Cliente actualizado correctamente", "OK");
+                    CargarClientes();
+                }
+                catch (Exception ex)
+                {
+                    await DisplayAlert("Error", $"No se pudo actualizar: {ex.Message}", "OK");
+                }
+            }
+            else
+            {
+                await DisplayAlert("Info", "No se realizaron cambios", "OK");
             }
         }
 

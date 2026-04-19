@@ -7,7 +7,7 @@ namespace PurificadoraApp.Services
         private bool _isConnected;
 
         public event PropertyChangedEventHandler PropertyChanged;
-        public event Func<Task> ConnectivityChanged;
+        public event Func<Task> ConnectivityChanged;  // ✅ Correcto: Func<Task>
 
         public bool IsConnected
         {
@@ -18,7 +18,7 @@ namespace PurificadoraApp.Services
                 {
                     _isConnected = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsConnected)));
-                    OnConnectivityChanged();
+                    _ = OnConnectivityChangedAsync();  // ✅ Llamada fire-and-forget
                 }
             }
         }
@@ -29,20 +29,16 @@ namespace PurificadoraApp.Services
             Connectivity.ConnectivityChanged += OnConnectivityChanged;
         }
 
-        private async void OnConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
+        private void OnConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
         {
             var newStatus = e.NetworkAccess == NetworkAccess.Internet;
             if (IsConnected != newStatus)
             {
                 IsConnected = newStatus;
-                if (ConnectivityChanged != null)
-                {
-                    await ConnectivityChanged.Invoke();
-                }
             }
         }
 
-        private async void OnConnectivityChanged()
+        private async Task OnConnectivityChangedAsync()
         {
             if (ConnectivityChanged != null)
             {
