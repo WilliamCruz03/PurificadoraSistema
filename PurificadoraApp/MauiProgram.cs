@@ -16,17 +16,19 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        // Registrar el manejador de sesión como singleton
+        // ✅ Registrar servicios (TODOS fuera del lambda)
         builder.Services.AddSingleton<CustomSessionHandler>();
+        builder.Services.AddSingleton<LocalDbService>();  // ✅ MOVER AQUÍ
 
         // Registrar el cliente de Supabase
         builder.Services.AddSingleton(provider =>
         {
             var sessionHandler = provider.GetRequiredService<CustomSessionHandler>();
+            // ❌ ELIMINAR esta línea de aquí: builder.Services.AddSingleton<LocalDbService>();
 
             var options = new SupabaseOptions
             {
-                AutoRefreshToken = true,  // Refresca el token automáticamente [citation:8]
+                AutoRefreshToken = true,
                 AutoConnectRealtime = true,
                 SessionHandler = sessionHandler
             };
@@ -37,11 +39,11 @@ public static class MauiProgram
                 options
             );
 
-            // Cargar la sesión guardada (si existe) [citation:4]
             client.Auth.LoadSession();
-
             return client;
         });
+
+        builder.Services.AddSingleton<SyncService>();
 
         return builder.Build();
     }

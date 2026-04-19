@@ -33,8 +33,8 @@ namespace PurificadoraApp.Services
                 .ToListAsync();
         }
 
-        // Actualizar estado de sincronización
-        public async Task<int> ActualizarEstadoSync(int idLocal, int estado, string? idRemoto = null)
+        // UN SOLO método ActualizarEstadoSync (con 4 parámetros, todos opcionales)
+        public async Task<int> ActualizarEstadoSync(int idLocal, int estado, string? idRemoto = null, string? errorMessage = null)
         {
             var entrega = await _database.FindAsync<EntregaLocal>(idLocal);
             if (entrega != null)
@@ -42,6 +42,8 @@ namespace PurificadoraApp.Services
                 entrega.EstadoSync = estado;
                 if (!string.IsNullOrEmpty(idRemoto))
                     entrega.IdRemoto = idRemoto;
+                if (!string.IsNullOrEmpty(errorMessage))
+                    entrega.ErrorMessage = errorMessage;
                 entrega.FechaSincronizacion = DateTime.Now;
                 return await _database.UpdateAsync(entrega);
             }
@@ -51,7 +53,15 @@ namespace PurificadoraApp.Services
         // Obtener todas las entregas (para el administrador local)
         public async Task<List<EntregaLocal>> GetAllEntregas()
         {
-            return await _database.Table<EntregaLocal>().OrderByDescending(e => e.FechaHoraRegistro).ToListAsync();
+            return await _database.Table<EntregaLocal>()
+                .OrderByDescending(e => e.FechaHoraRegistro)
+                .ToListAsync();
+        }
+
+        // Eliminar una entrega (opcional, para el administrador)
+        public async Task<int> EliminarEntrega(int idLocal)
+        {
+            return await _database.DeleteAsync<EntregaLocal>(idLocal);
         }
     }
 }

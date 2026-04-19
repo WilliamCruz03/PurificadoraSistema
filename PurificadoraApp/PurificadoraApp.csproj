@@ -66,6 +66,7 @@
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="Supabase" Version="1.1.1" />
 		<PackageReference Include="supabase-csharp" Version="0.16.2" />
+		<PackageReference Include="Supabase.Postgrest" Version="4.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
