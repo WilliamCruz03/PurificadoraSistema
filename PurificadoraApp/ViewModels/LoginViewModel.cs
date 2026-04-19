@@ -102,14 +102,17 @@ namespace PurificadoraApp.ViewModels
                 {
                     Debug.WriteLine($"IniciarSesion: Usuario ID: {session.User.Id}");
 
+                    // Obtener rol de los metadatos
                     var rol = session.User.UserMetadata?.TryGetValue("rol", out var rolObj) == true
                         ? rolObj?.ToString() ?? "Repartidor"
                         : "Repartidor";
 
+                    // Obtener nombre de los metadatos
                     var nombre = session.User.UserMetadata?.TryGetValue("nombre", out var nombreObj) == true
                         ? nombreObj?.ToString() ?? session.User.Email!
                         : session.User.Email!;
 
+                    // Crear objeto de sesión
                     var usuario = new UsuarioSesion
                     {
                         Id = session.User.Id!,
@@ -119,12 +122,13 @@ namespace PurificadoraApp.ViewModels
                         FechaInicio = DateTime.Now
                     };
 
+                    // Guardar en preferencias
                     Preferences.Set("usuario_actual", JsonSerializer.Serialize(usuario));
                     Preferences.Set("access_token", session.AccessToken);
 
                     Debug.WriteLine($"IniciarSesion: Usuario guardado - Rol: {rol}");
 
-                    // Cambiar la navegación según el rol
+                    // Navegar según el rol
                     if (rol == "Admin")
                     {
                         Application.Current.MainPage = new NavigationPage(new Views.AdminDashboardPage());
@@ -133,11 +137,10 @@ namespace PurificadoraApp.ViewModels
                     {
                         Application.Current.MainPage = new NavigationPage(new Views.RepartidorPage());
                     }
-
                 }
                 else
                 {
-                    MensajeError = "Error: No se pudo obtener la sesión del usuario";
+                    MensajeError = "Credenciales incorrectas. Verifique email y contraseña.";
                     Debug.WriteLine("IniciarSesion: Session o User es null");
                 }
             }

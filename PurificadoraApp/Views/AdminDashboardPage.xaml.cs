@@ -69,18 +69,45 @@ namespace PurificadoraApp.Views
         {
             if (e.CurrentSelection.FirstOrDefault() is EntregaLocal entrega)
             {
-                var action = await DisplayActionSheet($"Entrega: {entrega.ClienteNombre}", "Cancelar", null, "Editar", "Eliminar");
+                var action = await DisplayActionSheet($"Entrega: {entrega.ClienteNombre}", "Cancelar", null, "Editar cantidad", "Editar cliente", "Editar dirección", "Eliminar");
 
-                if (action == "Editar")
+                if (action == "Editar cantidad")
                 {
-                    var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre del cliente:", initialValue: entrega.ClienteNombre);
+                    var nuevaCantidad = await DisplayPromptAsync("Editar", "Nueva cantidad de garrafones:",
+                        initialValue: entrega.CantidadGarrafones.ToString(), keyboard: Keyboard.Numeric);
+
+                    if (!string.IsNullOrEmpty(nuevaCantidad) && int.TryParse(nuevaCantidad, out int cantidad) && cantidad > 0)
+                    {
+                        entrega.CantidadGarrafones = cantidad;
+                        await _localDbService.ActualizarEntrega(entrega);
+                        CargarDatos();
+                        await DisplayAlert("Éxito", "Cantidad actualizada", "OK");
+                    }
+                }
+                else if (action == "Editar cliente")
+                {
+                    var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre del cliente:",
+                        initialValue: entrega.ClienteNombre);
+
                     if (!string.IsNullOrEmpty(nuevoCliente) && nuevoCliente != entrega.ClienteNombre)
                     {
-                        // ACTUALIZAR, no crear nuevo
                         entrega.ClienteNombre = nuevoCliente;
-                        await _localDbService.ActualizarEntrega(entrega);  // Necesitas este método
+                        await _localDbService.ActualizarEntrega(entrega);
                         CargarDatos();
-                        await DisplayAlert("Éxito", "Entrega actualizada", "OK");
+                        await DisplayAlert("Éxito", "Cliente actualizado", "OK");
+                    }
+                }
+                else if (action == "Editar dirección")
+                {
+                    var nuevaDireccion = await DisplayPromptAsync("Editar", "Nueva dirección:",
+                        initialValue: entrega.Direccion);
+
+                    if (!string.IsNullOrEmpty(nuevaDireccion) && nuevaDireccion != entrega.Direccion)
+                    {
+                        entrega.Direccion = nuevaDireccion;
+                        await _localDbService.ActualizarEntrega(entrega);
+                        CargarDatos();
+                        await DisplayAlert("Éxito", "Dirección actualizada", "OK");
                     }
                 }
                 else if (action == "Eliminar")
@@ -99,16 +126,40 @@ namespace PurificadoraApp.Views
         {
             var button = sender as Button;
             var entrega = button?.CommandParameter as EntregaLocal;
-            if (entrega != null)
+            if (entrega == null) return;
+
+            var action = await DisplayActionSheet($"Editar: {entrega.ClienteNombre}", "Cancelar", null, "Cantidad", "Cliente", "Dirección");
+
+            if (action == "Cantidad")
             {
-                var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre del cliente:", initialValue: entrega.ClienteNombre);
+                var nuevaCantidad = await DisplayPromptAsync("Editar", "Nueva cantidad:",
+                    initialValue: entrega.CantidadGarrafones.ToString(), keyboard: Keyboard.Numeric);
+
+                if (!string.IsNullOrEmpty(nuevaCantidad) && int.TryParse(nuevaCantidad, out int cantidad) && cantidad > 0)
+                {
+                    entrega.CantidadGarrafones = cantidad;
+                    await _localDbService.ActualizarEntrega(entrega);
+                    CargarDatos();
+                }
+            }
+            else if (action == "Cliente")
+            {
+                var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre:", initialValue: entrega.ClienteNombre);
                 if (!string.IsNullOrEmpty(nuevoCliente) && nuevoCliente != entrega.ClienteNombre)
                 {
-                    // ACTUALIZAR, no crear nuevo
                     entrega.ClienteNombre = nuevoCliente;
                     await _localDbService.ActualizarEntrega(entrega);
                     CargarDatos();
-                    await DisplayAlert("Éxito", "Entrega actualizada", "OK");
+                }
+            }
+            else if (action == "Dirección")
+            {
+                var nuevaDireccion = await DisplayPromptAsync("Editar", "Nueva dirección:", initialValue: entrega.Direccion);
+                if (!string.IsNullOrEmpty(nuevaDireccion) && nuevaDireccion != entrega.Direccion)
+                {
+                    entrega.Direccion = nuevaDireccion;
+                    await _localDbService.ActualizarEntrega(entrega);
+                    CargarDatos();
                 }
             }
         }
@@ -122,6 +173,10 @@ namespace PurificadoraApp.Views
         private async void OnGestionarUsuariosClicked(object sender, EventArgs e)
         {
             await Navigation.PushAsync(new GestionUsuariosPage());
+        }
+        private async void OnGestionarClientesClicked(object sender, EventArgs e)
+        {
+            await Navigation.PushAsync(new ClientesPage());
         }
 
     }

@@ -67,7 +67,24 @@ namespace PurificadoraApp.Services
         // Actualizar una entrega existente
         public async Task<int> ActualizarEntrega(EntregaLocal entrega)
         {
-            return await _database.UpdateAsync(entrega);
+            // Verificar que la entrega existe
+            var existe = await _database.FindAsync<EntregaLocal>(entrega.IdLocal);
+            if (existe == null)
+                return 0;
+
+            // Actualizar SOLO los campos permitidos
+            existe.ClienteNombre = entrega.ClienteNombre;
+            existe.CantidadGarrafones = entrega.CantidadGarrafones;
+            existe.Direccion = entrega.Direccion;
+            existe.UpdatedAt = DateTime.Now;
+
+            // Si ya estaba sincronizada, marcar como pendiente nuevamente
+            if (existe.EstadoSync == 1)
+            {
+                existe.EstadoSync = 0; // Pendiente de re-sincronizar
+            }
+
+            return await _database.UpdateAsync(existe);
         }
     }
 }

@@ -87,18 +87,57 @@ namespace PurificadoraApp.Views
             var usuario = button?.CommandParameter as UserInfo;
             if (usuario == null) return;
 
-            var nuevoNombre = await DisplayPromptAsync("Editar Usuario", "Nombre:", initialValue: usuario.Nombre);
-            var nuevoRol = await DisplayActionSheet("Rol del usuario", "Cancelar", null, "Repartidor", "Admin");
+            bool hayCambios = false;
+            string nuevoNombre = null;
+            string nuevoRol = null;
 
-            if (!string.IsNullOrEmpty(nuevoNombre) || !string.IsNullOrEmpty(nuevoRol))
+            // Editar nombre - con validación de cancelar
+            var nombreResult = await DisplayPromptAsync("Editar Usuario", "Nombre:",
+                initialValue: usuario.Nombre, cancel: "Cancelar");
+
+            if (nombreResult != null) // Usuario no canceló
+            {
+                if (string.IsNullOrWhiteSpace(nombreResult))
+                {
+                    await DisplayAlert("Error", "El nombre no puede estar vacío", "OK");
+                    return;
+                }
+                if (nombreResult != usuario.Nombre)
+                {
+                    nuevoNombre = nombreResult;
+                    hayCambios = true;
+                }
+            }
+            else
+            {
+                return; // Canceló, salir
+            }
+
+            // Editar rol
+            var rolResult = await DisplayActionSheet("Rol del usuario", "Cancelar", null, "Repartidor", "Admin");
+            if (rolResult != "Cancelar")
+            {
+                if (rolResult != usuario.Rol)
+                {
+                    nuevoRol = rolResult;
+                    hayCambios = true;
+                }
+            }
+            else
+            {
+                return; // Canceló, salir
+            }
+
+            // Solo actualizar si hay cambios
+            if (hayCambios)
             {
                 try
                 {
                     await _supabaseAdminClient.Rpc("update_user", new
                     {
                         p_user_id = usuario.Id,
-                        p_nombre = nuevoNombre ?? "",
-                        p_rol = nuevoRol ?? ""
+                        p_nombre = nuevoNombre,
+                        p_rol = nuevoRol
                     });
 
                     await DisplayAlert("Éxito", "Usuario actualizado correctamente", "OK");
@@ -108,6 +147,10 @@ namespace PurificadoraApp.Views
                 {
                     await DisplayAlert("Error", $"No se pudo actualizar: {ex.Message}", "OK");
                 }
+            }
+            else
+            {
+                await DisplayAlert("Info", "No se realizaron cambios", "OK");
             }
         }
 

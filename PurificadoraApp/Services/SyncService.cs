@@ -161,5 +161,66 @@ namespace PurificadoraApp.Services
             var bajados = await SyncAdminDeliveries();
             return (subidos, bajados);
         }
+
+        // Sincronizar entregas actualizadas (modificadas localmente)
+        public async Task<int> SyncUpdatedDeliveries()
+        {
+            if (!await HasInternetConnection())
+                return 0;
+
+            // Obtener entregas que fueron actualizadas y están pendientes
+            var actualizadas = await _localDbService.GetEntregasPendientes();
+            int sincronizados = 0;
+
+            foreach (var entregaLocal in actualizadas)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(entregaLocal.IdRemoto))
+                    {
+                        // Actualizar existente en Supabase
+                        var entregaRemota = new EntregaRemota
+                        {
+                            Id = entregaLocal.IdRemoto,
+                            RepartidorId = entregaLocal.RepartidorId,
+                            RepartidorNombre = entregaLocal.RepartidorNombre,
+                            ClienteNombre = entregaLocal.ClienteNombre,
+                            Direccion = entregaLocal.Direccion,
+                            CantidadGarrafones = entregaLocal.CantidadGarrafones,
+                            FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
+                            Version = entregaLocal.Version + 1
+                        };
+
+                        await _supabaseClient.From<EntregaRemota>().Update(entregaRemota);
+                    }
+                    else
+                    {
+                        // Insertar nueva
+                        var entregaRemota = new EntregaRemota
+                        {
+                            RepartidorId = entregaLocal.RepartidorId,
+                            RepartidorNombre = entregaLocal.RepartidorNombre,
+                            ClienteNombre = entregaLocal.ClienteNombre,
+                            Direccion = entregaLocal.Direccion,
+                            CantidadGarrafones = entregaLocal.CantidadGarrafones,
+                            FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
+                            Version = entregaLocal.Version + 1
+                        };
+
+                        var response = await _supabaseClient.From<EntregaRemota>().Insert(entregaRemota);
+                        await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1, response.Model?.Id);
+                    }
+
+                    await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1);
+                    sincronizados++;
+                }
+                catch (Exception ex)
+                {
+                    await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 2, errorMessage: ex.Message);
+                }
+            }
+
+            return sincronizados;
+        }
     }
 }
