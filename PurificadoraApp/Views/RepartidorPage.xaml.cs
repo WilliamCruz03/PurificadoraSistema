@@ -2,6 +2,7 @@ using PurificadoraApp.Models;
 using PurificadoraApp.Services;
 using System.Text.Json;
 using Supabase;
+using System.Diagnostics;
 
 namespace PurificadoraApp.Views
 {
@@ -18,18 +19,37 @@ namespace PurificadoraApp.Views
 
         public RepartidorPage()
         {
-            InitializeComponent();
-            _localDbService = MauiProgram.GetService<LocalDbService>();
-            _syncService = MauiProgram.GetService<SyncService>();
-            _supabaseClient = MauiProgram.GetService<Supabase.Client>();
-            _connectivityService = MauiProgram.GetService<ConnectivityService>();
+            try
+            {
+                InitializeComponent();
 
-            // Suscribirse a cambios de conectividad
-            _connectivityService.ConnectivityChanged += async () => await OnConnectivityChanged();
+                Debug.WriteLine("RepartidorPage: Inicializando servicios...");
 
-            CargarDatosRepartidor();
-            CargarEntregasPendientes();
-            _ = VerificarConexion();
+                _localDbService = MauiProgram.GetService<LocalDbService>();
+                Debug.WriteLine($"LocalDbService: {(_localDbService != null ? "OK" : "NULL")}");
+
+                _syncService = MauiProgram.GetService<SyncService>();
+                Debug.WriteLine($"SyncService: {(_syncService != null ? "OK" : "NULL")}");
+
+                _supabaseClient = MauiProgram.GetService<Supabase.Client>();
+                Debug.WriteLine($"SupabaseClient: {(_supabaseClient != null ? "OK" : "NULL")}");
+
+                _connectivityService = MauiProgram.GetService<ConnectivityService>();
+                Debug.WriteLine($"ConnectivityService: {(_connectivityService != null ? "OK" : "NULL")}");
+
+                _connectivityService.ConnectivityChanged += async () => await OnConnectivityChanged();
+
+                CargarDatosRepartidor();
+                CargarEntregasPendientes();
+                _ = VerificarConexion();
+
+                Debug.WriteLine("RepartidorPage: Inicialización completada");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"RepartidorPage ERROR: {ex.Message}");
+                Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+            }
         }
 
         private void CargarDatosRepartidor()

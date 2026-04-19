@@ -3,6 +3,7 @@ using PurificadoraApp.Models;
 using System.Text.Json;
 using Supabase.Postgrest.Models;
 using Microsoft.Maui.Networking;
+using System.Diagnostics;
 
 namespace PurificadoraApp.Services
 {
@@ -60,12 +61,13 @@ namespace PurificadoraApp.Services
             }
         }
 
-        // Sincronizar entregas pendientes (SUBIR)
-        public async Task<int> SyncPendingDeliveries()
+        // Sincronizar entregas actualizadas (modificadas localmente) - NUEVAS Y EDITADAS
+        public async Task<int> SyncUpdatedDeliveries()
         {
             if (!await HasInternetConnection())
                 return 0;
 
+            // Obtener entregas pendientes (incluye las editadas)
             var pendientes = await _localDbService.GetEntregasPendientes();
             int sincronizados = 0;
 
@@ -73,27 +75,52 @@ namespace PurificadoraApp.Services
             {
                 try
                 {
-                    // Crear el objeto para Supabase usando la clase tipada
-                    var entregaRemota = new EntregaRemota
+                    Debug.WriteLine($"Sincronizando entrega ID local: {entregaLocal.IdLocal}, Remoto: {entregaLocal.IdRemoto ?? "Nuevo"}");
+
+                    if (!string.IsNullOrEmpty(entregaLocal.IdRemoto))
                     {
-                        RepartidorId = entregaLocal.RepartidorId,
-                        RepartidorNombre = entregaLocal.RepartidorNombre,
-                        ClienteNombre = entregaLocal.ClienteNombre,
-                        Direccion = entregaLocal.Direccion,
-                        CantidadGarrafones = entregaLocal.CantidadGarrafones,
-                        FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
-                        Version = entregaLocal.Version + 1
-                    };
+                        // ACTUALIZAR existente en Supabase
+                        var entregaRemota = new EntregaRemota
+                        {
+                            Id = entregaLocal.IdRemoto,
+                            RepartidorId = entregaLocal.RepartidorId,
+                            RepartidorNombre = entregaLocal.RepartidorNombre,
+                            ClienteNombre = entregaLocal.ClienteNombre,
+                            Direccion = entregaLocal.Direccion,
+                            CantidadGarrafones = entregaLocal.CantidadGarrafones,
+                            FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
+                            Version = entregaLocal.Version + 1
+                        };
 
-                    // Insertar en Supabase
-                    var response = await _supabaseClient.From<EntregaRemota>().Insert(entregaRemota);
+                        await _supabaseClient.From<EntregaRemota>().Update(entregaRemota);
+                        Debug.WriteLine($"  Actualizado en Supabase - ID: {entregaLocal.IdRemoto}");
+                    }
+                    else
+                    {
+                        // Insertar nueva
+                        var entregaRemota = new EntregaRemota
+                        {
+                            RepartidorId = entregaLocal.RepartidorId,
+                            RepartidorNombre = entregaLocal.RepartidorNombre,
+                            ClienteNombre = entregaLocal.ClienteNombre,
+                            Direccion = entregaLocal.Direccion,
+                            CantidadGarrafones = entregaLocal.CantidadGarrafones,
+                            FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
+                            Version = entregaLocal.Version + 1
+                        };
 
-                    // Actualizar estado local
-                    await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1, response.Model?.Id);
+                        var response = await _supabaseClient.From<EntregaRemota>().Insert(entregaRemota);
+                        await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1, response.Model?.Id);
+                        Debug.WriteLine($"  Insertado en Supabase - Nuevo ID: {response.Model?.Id}");
+                    }
+
+                    // Marcar como sincronizado
+                    await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1);
                     sincronizados++;
                 }
                 catch (Exception ex)
                 {
+                    Debug.WriteLine($"Error sincronizando entrega {entregaLocal.IdLocal}: {ex.Message}");
                     await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 2, errorMessage: ex.Message);
                 }
             }
@@ -157,70 +184,9 @@ namespace PurificadoraApp.Services
         // Sincronización completa
         public async Task<(int subidos, int bajados)> SyncAll()
         {
-            var subidos = await SyncPendingDeliveries();
+            var subidos = await SyncUpdatedDeliveries();
             var bajados = await SyncAdminDeliveries();
             return (subidos, bajados);
-        }
-
-        // Sincronizar entregas actualizadas (modificadas localmente)
-        public async Task<int> SyncUpdatedDeliveries()
-        {
-            if (!await HasInternetConnection())
-                return 0;
-
-            // Obtener entregas que fueron actualizadas y están pendientes
-            var actualizadas = await _localDbService.GetEntregasPendientes();
-            int sincronizados = 0;
-
-            foreach (var entregaLocal in actualizadas)
-            {
-                try
-                {
-                    if (!string.IsNullOrEmpty(entregaLocal.IdRemoto))
-                    {
-                        // Actualizar existente en Supabase
-                        var entregaRemota = new EntregaRemota
-                        {
-                            Id = entregaLocal.IdRemoto,
-                            RepartidorId = entregaLocal.RepartidorId,
-                            RepartidorNombre = entregaLocal.RepartidorNombre,
-                            ClienteNombre = entregaLocal.ClienteNombre,
-                            Direccion = entregaLocal.Direccion,
-                            CantidadGarrafones = entregaLocal.CantidadGarrafones,
-                            FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
-                            Version = entregaLocal.Version + 1
-                        };
-
-                        await _supabaseClient.From<EntregaRemota>().Update(entregaRemota);
-                    }
-                    else
-                    {
-                        // Insertar nueva
-                        var entregaRemota = new EntregaRemota
-                        {
-                            RepartidorId = entregaLocal.RepartidorId,
-                            RepartidorNombre = entregaLocal.RepartidorNombre,
-                            ClienteNombre = entregaLocal.ClienteNombre,
-                            Direccion = entregaLocal.Direccion,
-                            CantidadGarrafones = entregaLocal.CantidadGarrafones,
-                            FechaHoraRegistro = entregaLocal.FechaHoraRegistro,
-                            Version = entregaLocal.Version + 1
-                        };
-
-                        var response = await _supabaseClient.From<EntregaRemota>().Insert(entregaRemota);
-                        await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1, response.Model?.Id);
-                    }
-
-                    await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 1);
-                    sincronizados++;
-                }
-                catch (Exception ex)
-                {
-                    await _localDbService.ActualizarEstadoSync(entregaLocal.IdLocal, 2, errorMessage: ex.Message);
-                }
-            }
-
-            return sincronizados;
         }
     }
 }

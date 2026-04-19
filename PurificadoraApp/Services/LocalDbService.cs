@@ -1,5 +1,6 @@
 ﻿using SQLite;
 using PurificadoraApp.Models;
+using System.Diagnostics;
 
 namespace PurificadoraApp.Services
 {
@@ -53,9 +54,17 @@ namespace PurificadoraApp.Services
         // Obtener todas las entregas (para el administrador local)
         public async Task<List<EntregaLocal>> GetAllEntregas()
         {
-            return await _database.Table<EntregaLocal>()
+            var entregas = await _database.Table<EntregaLocal>()
                 .OrderByDescending(e => e.FechaHoraRegistro)
                 .ToListAsync();
+
+            Debug.WriteLine($"GetAllEntregas: {entregas.Count} entregas encontradas");
+            foreach (var e in entregas.Take(5))
+            {
+                Debug.WriteLine($"  - ID: {e.IdLocal}, Cliente: {e.ClienteNombre}, Cantidad: {e.CantidadGarrafones}");
+            }
+
+            return entregas;
         }
 
         // Eliminar una entrega (opcional, para el administrador)
@@ -63,28 +72,46 @@ namespace PurificadoraApp.Services
         {
             return await _database.DeleteAsync<EntregaLocal>(idLocal);
         }
-
+        // Actualizar una entrega existente
         // Actualizar una entrega existente
         public async Task<int> ActualizarEntrega(EntregaLocal entrega)
         {
-            // Verificar que la entrega existe
-            var existe = await _database.FindAsync<EntregaLocal>(entrega.IdLocal);
-            if (existe == null)
-                return 0;
-
-            // Actualizar SOLO los campos permitidos
-            existe.ClienteNombre = entrega.ClienteNombre;
-            existe.CantidadGarrafones = entrega.CantidadGarrafones;
-            existe.Direccion = entrega.Direccion;
-            existe.UpdatedAt = DateTime.Now;
-
-            // Si ya estaba sincronizada, marcar como pendiente nuevamente
-            if (existe.EstadoSync == 1)
+            try
             {
-                existe.EstadoSync = 0; // Pendiente de re-sincronizar
-            }
+                // Verificar que la entrega existe
+                var existe = await _database.FindAsync<EntregaLocal>(entrega.IdLocal);
+                if (existe == null)
+                {
+                    Debug.WriteLine($"Entrega con IdLocal {entrega.IdLocal} no encontrada");
+                    return 0;
+                }
 
-            return await _database.UpdateAsync(existe);
+                Debug.WriteLine($"Actualizando entrega ID: {entrega.IdLocal}");
+                Debug.WriteLine($"  ClienteNombre: {entrega.ClienteNombre}");
+                Debug.WriteLine($"  Cantidad: {entrega.CantidadGarrafones}");
+                Debug.WriteLine($"  Direccion: {entrega.Direccion}");
+
+                // Actualizar SOLO los campos permitidos
+                existe.ClienteId = entrega.ClienteId;
+                existe.ClienteNombre = entrega.ClienteNombre;
+                existe.CantidadGarrafones = entrega.CantidadGarrafones;
+                existe.Direccion = entrega.Direccion;
+                existe.UpdatedAt = DateTime.Now;
+
+                // CRUCIAL: Marcar como pendiente de sincronización SIEMPRE
+                existe.EstadoSync = 0; // Pendiente de re-sincronizar
+                Debug.WriteLine("Entrega marcada como pendiente de sincronización");
+
+                var resultado = await _database.UpdateAsync(existe);
+                Debug.WriteLine($"Resultado update: {resultado}");
+
+                return resultado;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error en ActualizarEntrega: {ex.Message}");
+                return 0;
+            }
         }
     }
 }

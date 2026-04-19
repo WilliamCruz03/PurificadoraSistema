@@ -26,6 +26,7 @@ public static class MauiProgram
         // Registrar servicios
         builder.Services.AddSingleton<CustomSessionHandler>();
         builder.Services.AddSingleton<LocalDbService>();
+        builder.Services.AddSingleton<ConnectivityService>();
 
         // Registrar el cliente de Supabase (usando anon key para usuarios normales)
         builder.Services.AddSingleton(provider =>

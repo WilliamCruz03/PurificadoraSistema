@@ -13,7 +13,7 @@
             <Button Grid.Column="1" Text="🔄" BackgroundColor="Transparent" 
             TextColor="White" FontSize="18" Clicked="OnSyncManualClicked"
             IsVisible="{Binding IsConnected}"/>
-            <Button Grid.Column="2" Text="🚪" BackgroundColor="Transparent" 
+            <Button Grid.Column="2" Text="Salir" BackgroundColor="Transparent" 
             TextColor="White" FontSize="18" Clicked="OnLogoutClicked"/>
             <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="10">
                 <Image x:Name="ImgConexion" Source="cloud_off.png" HeightRequest="20"/>
