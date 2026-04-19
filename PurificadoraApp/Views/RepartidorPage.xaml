@@ -69,7 +69,13 @@
                     <DataTemplate>
                         <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
                             <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
-                            <Label Text="{Binding CantidadGarrafones} garrafones" Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray"/>
+                            <Label Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray">
+                                <Label.Text>
+                                    <MultiBinding StringFormat="{}{0} garrafones">
+                                        <Binding Path="CantidadGarrafones"/>
+                                    </MultiBinding>
+                                </Label.Text>
+                            </Label>
                             <Label Text="⏳" Grid.Row="0" Grid.Column="1" FontSize="20"/>
                         </Grid>
                     </DataTemplate>

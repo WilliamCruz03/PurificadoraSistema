@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PurificadoraApp.Views.GestionUsuariosPage"
+             Title="Gestión de Usuarios"
+             BackgroundColor="#f5f5f5">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Botón para nuevo usuario -->
+        <Button Grid.Row="0" Text="+ Nuevo Usuario" 
+                BackgroundColor="#27ae60" TextColor="White"
+                CornerRadius="10" Margin="10" HeightRequest="50"
+                Clicked="OnNuevoUsuarioClicked"/>
+
+        <!-- Lista de usuarios -->
+        <CollectionView x:Name="ListaUsuarios" Grid.Row="1">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="10" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" BackgroundColor="White" Margin="5">
+                        <Label Text="{Binding Email}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
+                        <Label Text="{Binding Nombre}" Grid.Row="1" Grid.Column="0" FontSize="14" TextColor="Gray"/>
+                        <Label Text="{Binding Rol}" Grid.Row="2" Grid.Column="0" FontSize="12" TextColor="#2c3e50"/>
+                        <StackLayout Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                            <Button Text="✏️" BackgroundColor="Transparent" Clicked="OnEditarClicked" CommandParameter="{Binding .}"/>
+                            <Button Text="🗑️" BackgroundColor="Transparent" TextColor="Red" Clicked="OnEliminarClicked" CommandParameter="{Binding .}"/>
+                        </StackLayout>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

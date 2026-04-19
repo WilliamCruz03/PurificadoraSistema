@@ -56,5 +56,24 @@ public static class MauiProgram
 
         CurrentApp = builder.Build();
         return CurrentApp;
+
+        // Cliente Admin (con service_role key) - solo para operaciones de administración
+        builder.Services.AddSingleton(provider =>
+        {
+            var options = new SupabaseOptions
+            {
+                AutoRefreshToken = false,
+                AutoConnectRealtime = false
+            };
+
+            var client = new Supabase.Client(
+                SupabaseConfig.Url,
+                SupabaseConfig.ServiceRoleKey,  // Usar service_role key
+                options
+            );
+
+            return client;
+        });
     }
+
 }
