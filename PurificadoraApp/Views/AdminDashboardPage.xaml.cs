@@ -73,12 +73,12 @@ namespace PurificadoraApp.Views
 
                 if (action == "Editar")
                 {
-                    // Mostrar diálogo de edición
                     var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre del cliente:", initialValue: entrega.ClienteNombre);
-                    if (!string.IsNullOrEmpty(nuevoCliente))
+                    if (!string.IsNullOrEmpty(nuevoCliente) && nuevoCliente != entrega.ClienteNombre)
                     {
+                        // ACTUALIZAR, no crear nuevo
                         entrega.ClienteNombre = nuevoCliente;
-                        await _localDbService.GuardarEntrega(entrega);
+                        await _localDbService.ActualizarEntrega(entrega);  // Necesitas este método
                         CargarDatos();
                         await DisplayAlert("Éxito", "Entrega actualizada", "OK");
                     }
@@ -102,11 +102,13 @@ namespace PurificadoraApp.Views
             if (entrega != null)
             {
                 var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre del cliente:", initialValue: entrega.ClienteNombre);
-                if (!string.IsNullOrEmpty(nuevoCliente))
+                if (!string.IsNullOrEmpty(nuevoCliente) && nuevoCliente != entrega.ClienteNombre)
                 {
+                    // ACTUALIZAR, no crear nuevo
                     entrega.ClienteNombre = nuevoCliente;
-                    await _localDbService.GuardarEntrega(entrega);
+                    await _localDbService.ActualizarEntrega(entrega);
                     CargarDatos();
+                    await DisplayAlert("Éxito", "Entrega actualizada", "OK");
                 }
             }
         }
@@ -122,10 +124,6 @@ namespace PurificadoraApp.Views
             await Navigation.PushAsync(new GestionUsuariosPage());
         }
 
-        private async void OnNuevoUsuarioClicked(object sender, EventArgs e)
-        {
-            await Navigation.PushAsync(new GestionUsuariosPage());
-        }
     }
 
 }

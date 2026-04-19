@@ -26,8 +26,11 @@
         <!-- Filtros -->
         <Grid Grid.Row="1" Padding="10" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
             <Picker x:Name="PickerFiltroRepartidor" Grid.Row="0" Grid.ColumnSpan="2" Title="Filtrar por repartidor" SelectedIndexChanged="OnFiltroChanged"/>
-            <DatePicker x:Name="DateFechaInicio" Grid.Row="1" Grid.Column="0" Title="Desde"/>
-            <DatePicker x:Name="DateFechaFin" Grid.Row="1" Grid.Column="1" Title="Hasta"/>
+            <Label Grid.Row="1" Grid.Column="0" Text="Desde:" VerticalOptions="Center"/>
+            <DatePicker x:Name="DateFechaInicio" Grid.Row="1" Grid.Column="0" VerticalOptions="End"/>
+
+            <Label Grid.Row="1" Grid.Column="1" Text="Hasta:" VerticalOptions="Center"/>
+            <DatePicker x:Name="DateFechaFin" Grid.Row="1" Grid.Column="1" VerticalOptions="End"/>
         </Grid>
 
         <!-- Lista de entregas -->

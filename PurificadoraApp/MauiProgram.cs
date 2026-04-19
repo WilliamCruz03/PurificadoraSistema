@@ -27,7 +27,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CustomSessionHandler>();
         builder.Services.AddSingleton<LocalDbService>();
 
-        // Registrar el cliente de Supabase
+        // Registrar el cliente de Supabase (usando anon key para usuarios normales)
         builder.Services.AddSingleton(provider =>
         {
             var sessionHandler = provider.GetRequiredService<CustomSessionHandler>();
@@ -44,18 +44,9 @@ public static class MauiProgram
                 options
             );
 
-            // ❌ ELIMINA esta línea: client.Initialize();
-
-            // Cargar sesión guardada
             client.Auth.LoadSession();
-
             return client;
         });
-
-        builder.Services.AddSingleton<SyncService>();
-
-        CurrentApp = builder.Build();
-        return CurrentApp;
 
         // Cliente Admin (con service_role key) - solo para operaciones de administración
         builder.Services.AddSingleton(provider =>
@@ -68,12 +59,16 @@ public static class MauiProgram
 
             var client = new Supabase.Client(
                 SupabaseConfig.Url,
-                SupabaseConfig.ServiceRoleKey,  // Usar service_role key
+                SupabaseConfig.ServiceRoleKey,
                 options
             );
 
             return client;
         });
-    }
 
+        builder.Services.AddSingleton<SyncService>();
+
+        CurrentApp = builder.Build();
+        return CurrentApp;
+    }
 }

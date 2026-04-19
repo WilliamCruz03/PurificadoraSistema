@@ -63,5 +63,11 @@ namespace PurificadoraApp.Services
         {
             return await _database.DeleteAsync<EntregaLocal>(idLocal);
         }
+
+        // Actualizar una entrega existente
+        public async Task<int> ActualizarEntrega(EntregaLocal entrega)
+        {
+            return await _database.UpdateAsync(entrega);
+        }
     }
 }
