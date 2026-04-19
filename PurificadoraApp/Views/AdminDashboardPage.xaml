@@ -9,6 +9,8 @@
 
         <!-- Header con estadísticas -->
         <Grid Grid.Row="0" BackgroundColor="#2c3e50" Padding="15" ColumnDefinitions="*,*,*">
+            <Button Grid.Column="3" Text="🚪" BackgroundColor="Transparent" 
+            TextColor="White" FontSize="20" Clicked="OnLogoutClicked"/>
             <StackLayout Grid.Column="0" HorizontalOptions="Center">
                 <Label x:Name="LblTotalEntregas" Text="0" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center"/>
                 <Label Text="Total" TextColor="White" FontSize="12"/>
@@ -60,10 +62,6 @@
                     BackgroundColor="#3498db" TextColor="White" FontSize="20"
                     CornerRadius="30" WidthRequest="50" HeightRequest="50"
                     Clicked="OnGestionarUsuariosClicked"/>
-            <Button x:Name="BtnNuevoUsuario" Text="+" 
-                    BackgroundColor="#27ae60" TextColor="White" FontSize="24"
-                    CornerRadius="30" WidthRequest="50" HeightRequest="50"
-                    Clicked="OnNuevoUsuarioClicked"/>
             <Button x:Name="BtnGestionarClientes" Text="👤" 
             BackgroundColor="#9b59b6" TextColor="White" FontSize="20"
             CornerRadius="30" WidthRequest="50" HeightRequest="50"

@@ -179,6 +179,23 @@ namespace PurificadoraApp.Views
             await Navigation.PushAsync(new ClientesPage());
         }
 
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            CargarDatos(); // Recargar al volver a la pantalla
+        }
+
+        private async void OnLogoutClicked(object sender, EventArgs e)
+        {
+            var confirmar = await DisplayAlert("Cerrar Sesión", "¿Está seguro que desea cerrar sesión?", "Sí", "No");
+            if (confirmar)
+            {
+                Preferences.Remove("usuario_actual");
+                Preferences.Remove("access_token");
+                Application.Current.MainPage = new NavigationPage(new Views.LoginPage());
+            }
+        }
+
     }
 
 }

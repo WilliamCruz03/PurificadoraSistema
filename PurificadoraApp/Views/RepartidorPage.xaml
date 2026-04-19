@@ -3,85 +3,124 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PurificadoraApp.Views.RepartidorPage"
              Title="Registro de Entregas"
-             BackgroundColor="White">
+             BackgroundColor="#f5f5f5">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="15">
+    <Grid RowDefinitions="Auto,Auto,*">
 
-            <Label Text="Nueva Entrega" 
-                   FontSize="24" 
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   TextColor="#2c3e50"/>
-
-            <!-- Cliente -->
-            <Entry x:Name="TxtCliente" 
-                   Placeholder="Nombre del cliente" 
-                   PlaceholderColor="Gray"
-                   BackgroundColor="#f0f0f0"/>
-
-            <!-- Dirección -->
-            <Entry x:Name="TxtDireccion" 
-                   Placeholder="Dirección completa" 
-                   PlaceholderColor="Gray"
-                   BackgroundColor="#f0f0f0"/>
-
-            <!-- Cantidad de garrafones -->
-            <Entry x:Name="TxtCantidad" 
-                   Placeholder="Cantidad de garrafones" 
-                   PlaceholderColor="Gray"
-                   Keyboard="Numeric"
-                   BackgroundColor="#f0f0f0"/>
-
-            <!-- Estado de conexión -->
-            <StackLayout Orientation="Horizontal" Spacing="10" HorizontalOptions="Center">
+        <!-- Estado de conexión y repartidor -->
+        <Grid Grid.Row="0" Padding="10" ColumnDefinitions="*,Auto,Auto" BackgroundColor="#2c3e50">
+            <Label x:Name="LblRepartidorNombre" Text="Cargando..." TextColor="White" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="🔄" BackgroundColor="Transparent" 
+            TextColor="White" FontSize="18" Clicked="OnSyncManualClicked"
+            IsVisible="{Binding IsConnected}"/>
+            <Button Grid.Column="2" Text="🚪" BackgroundColor="Transparent" 
+            TextColor="White" FontSize="18" Clicked="OnLogoutClicked"/>
+            <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="10">
                 <Image x:Name="ImgConexion" Source="cloud_off.png" HeightRequest="20"/>
                 <Label x:Name="LblEstadoConexion" Text="Sin conexión" TextColor="Red"/>
             </StackLayout>
+        </Grid>
 
-            <!-- Botón Registrar -->
-            <Button x:Name="BtnRegistrar" 
-                    Text="Registrar Entrega" 
-                    BackgroundColor="#27ae60"
-                    TextColor="White"
-                    CornerRadius="10"
-                    HeightRequest="50"
-                    Clicked="OnRegistrarClicked"/>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="15">
 
-            <!-- Botón Sincronizar -->
-            <Button x:Name="BtnSincronizar" 
-                    Text="Sincronizar Entregas" 
-                    BackgroundColor="#3498db"
-                    TextColor="White"
-                    CornerRadius="10"
-                    HeightRequest="50"
-                    Clicked="OnSincronizarClicked"/>
+                <Label Text="Nueva Entrega" 
+                       FontSize="24" 
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       TextColor="#2c3e50"/>
 
-            <!-- Lista de entregas pendientes -->
-            <Label Text="Entregas Pendientes de Sincronizar" 
-                   FontSize="16" 
-                   FontAttributes="Bold"
-                   Margin="0,20,0,5"/>
+                <!-- Buscador de clientes -->
+                <Label Text="Buscar Cliente" FontAttributes="Bold"/>
+                <SearchBar x:Name="SearchBarClientes" 
+                           Placeholder="Buscar cliente por nombre o teléfono..."
+                           TextChanged="OnBuscarClienteChanged"/>
 
-            <CollectionView x:Name="ListaPendientes" 
-                            HeightRequest="300">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-                            <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
-                            <Label Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray">
-                                <Label.Text>
-                                    <MultiBinding StringFormat="{}{0} garrafones">
-                                        <Binding Path="CantidadGarrafones"/>
-                                    </MultiBinding>
-                                </Label.Text>
-                            </Label>
-                            <Label Text="⏳" Grid.Row="0" Grid.Column="1" FontSize="20"/>
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+                <!-- Lista de resultados de clientes -->
+                <CollectionView x:Name="ListaClientesResultados" 
+                                HeightRequest="200"
+                                IsVisible="False"
+                                SelectionMode="Single"
+                                SelectionChanged="OnClienteSeleccionado">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="10" BackgroundColor="White" Margin="0,2">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding NombreCompleto}" FontAttributes="Bold"/>
+                                        <Label Text="{Binding Direccion}" FontSize="12" TextColor="Gray"/>
+                                        <Label Text="{Binding Telefono}" FontSize="12" TextColor="Gray"/>
+                                    </VerticalStackLayout>
+                                    <Label Text="➡️" Grid.Column="1" VerticalOptions="Center" FontSize="20"/>
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
-        </VerticalStackLayout>
-    </ScrollView>
+                <!-- Cliente seleccionado -->
+                <Frame x:Name="FrameClienteSeleccionado" BorderColor="#27ae60" CornerRadius="10" IsVisible="False">
+                    <VerticalStackLayout>
+                        <Label Text="Cliente Seleccionado" FontAttributes="Bold" TextColor="#27ae60"/>
+                        <Label x:Name="LblClienteSeleccionado" FontSize="16"/>
+                        <Label x:Name="LblDireccionSeleccionada" FontSize="14" TextColor="Gray"/>
+                        <Button Text="Cambiar Cliente" Clicked="OnCambiarCliente" BackgroundColor="Gray" TextColor="White"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Cantidad de garrafones -->
+                <Entry x:Name="TxtCantidad" 
+                       Placeholder="Cantidad de garrafones" 
+                       PlaceholderColor="Gray"
+                       Keyboard="Numeric"
+                       BackgroundColor="#f0f0f0"/>
+
+                <!-- Botón Registrar -->
+                <Button x:Name="BtnRegistrar" 
+                        Text="Registrar Entrega" 
+                        BackgroundColor="#27ae60"
+                        TextColor="White"
+                        CornerRadius="10"
+                        HeightRequest="50"
+                        IsEnabled="False"
+                        Clicked="OnRegistrarClicked"/>
+
+                <!-- Botón Sincronizar -->
+                <Button x:Name="BtnSincronizar" 
+                        Text="Sincronizar Entregas" 
+                        BackgroundColor="#3498db"
+                        TextColor="White"
+                        CornerRadius="10"
+                        HeightRequest="50"
+                        Clicked="OnSincronizarClicked"/>
+
+                <!-- Lista de entregas pendientes -->
+                <Label Text="Entregas Pendientes de Sincronizar" 
+                       FontSize="16" 
+                       FontAttributes="Bold"
+                       Margin="0,20,0,5"/>
+
+                <CollectionView x:Name="ListaPendientes" 
+                                HeightRequest="250">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" BackgroundColor="White" Margin="5">
+                                <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
+                                <Label Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray">
+                                    <Label.Text>
+                                        <MultiBinding StringFormat="{}{0} garrafones - {1}">
+                                            <Binding Path="CantidadGarrafones"/>
+                                            <Binding Path="Direccion"/>
+                                        </MultiBinding>
+                                    </Label.Text>
+                                </Label>
+                                <Label Text="⏳" Grid.Row="0" Grid.Column="1" FontSize="20"/>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>

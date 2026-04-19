@@ -1,5 +1,7 @@
 using PurificadoraApp.Models;
 using PurificadoraApp.Services;
+using System.Text.Json;
+using Supabase;
 
 namespace PurificadoraApp.Views
 {
@@ -7,18 +9,45 @@ namespace PurificadoraApp.Views
     {
         private readonly LocalDbService _localDbService;
         private readonly SyncService _syncService;
+        private readonly Supabase.Client _supabaseClient;
         private string _repartidorId = string.Empty;
         private string _repartidorNombre = string.Empty;
+        private Cliente _clienteSeleccionado;
+        private List<Cliente> _clientesEncontrados;
+        private readonly ConnectivityService _connectivityService;
 
         public RepartidorPage()
         {
             InitializeComponent();
             _localDbService = MauiProgram.GetService<LocalDbService>();
             _syncService = MauiProgram.GetService<SyncService>();
+            _supabaseClient = MauiProgram.GetService<Supabase.Client>();
+            _connectivityService = MauiProgram.GetService<ConnectivityService>();
+
+            // Suscribirse a cambios de conectividad
+            _connectivityService.ConnectivityChanged += OnConnectivityChanged;
 
             CargarDatosRepartidor();
             CargarEntregasPendientes();
             VerificarConexion();
+        }
+        private async Task OnConnectivityChanged()
+        {
+            // Ejecutar en el hilo principal
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await VerificarConexion();
+
+                // Si hay conexión, sincronizar automáticamente
+                if (_connectivityService.IsConnected)
+                {
+                    var pendientes = await _localDbService.GetEntregasPendientes();
+                    if (pendientes.Any())
+                    {
+                        await OnSincronizarClicked(null, null);
+                    }
+                }
+            });
         }
 
         private void CargarDatosRepartidor()
@@ -26,9 +55,10 @@ namespace PurificadoraApp.Views
             var usuarioJson = Preferences.Get("usuario_actual", string.Empty);
             if (!string.IsNullOrEmpty(usuarioJson))
             {
-                var usuario = System.Text.Json.JsonSerializer.Deserialize<UsuarioSesion>(usuarioJson);
+                var usuario = JsonSerializer.Deserialize<UsuarioSesion>(usuarioJson);
                 _repartidorId = usuario?.Id ?? string.Empty;
                 _repartidorNombre = usuario?.Nombre ?? string.Empty;
+                LblRepartidorNombre.Text = $"Bienvenido, {_repartidorNombre}";
             }
         }
 
@@ -55,18 +85,60 @@ namespace PurificadoraApp.Views
             }
         }
 
-        private async void OnRegistrarClicked(object sender, EventArgs e)
+        private async void OnBuscarClienteChanged(object sender, TextChangedEventArgs e)
         {
-            // Validar campos
-            if (string.IsNullOrWhiteSpace(TxtCliente.Text))
+            if (string.IsNullOrWhiteSpace(e.NewTextValue) || e.NewTextValue.Length < 2)
             {
-                await DisplayAlert("Error", "Ingrese el nombre del cliente", "OK");
+                ListaClientesResultados.IsVisible = false;
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(TxtDireccion.Text))
+            try
             {
-                await DisplayAlert("Error", "Ingrese la dirección", "OK");
+                var response = await _supabaseClient.Rpc("search_clientes", new { search_term = e.NewTextValue });
+                if (response.Content != null)
+                {
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    _clientesEncontrados = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
+                    ListaClientesResultados.ItemsSource = _clientesEncontrados;
+                    ListaClientesResultados.IsVisible = _clientesEncontrados.Any();
+                }
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Error al buscar clientes: {ex.Message}", "OK");
+            }
+        }
+
+        private void OnClienteSeleccionado(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.CurrentSelection.FirstOrDefault() is Cliente cliente)
+            {
+                _clienteSeleccionado = cliente;
+                LblClienteSeleccionado.Text = cliente.NombreCompleto;
+                LblDireccionSeleccionada.Text = cliente.Direccion;
+                ListaClientesResultados.IsVisible = false;
+                SearchBarClientes.Text = string.Empty;
+                BtnRegistrar.IsEnabled = true;
+                FrameClienteSeleccionado.IsVisible = true;
+            }
+        }
+
+        private void OnCambiarCliente(object sender, EventArgs e)
+        {
+            _clienteSeleccionado = null;
+            BtnRegistrar.IsEnabled = false;
+            LblClienteSeleccionado.Text = string.Empty;
+            LblDireccionSeleccionada.Text = string.Empty;
+            FrameClienteSeleccionado.IsVisible = false;
+            SearchBarClientes.Focus();
+        }
+
+        private async void OnRegistrarClicked(object sender, EventArgs e)
+        {
+            if (_clienteSeleccionado == null)
+            {
+                await DisplayAlert("Error", "Debe seleccionar un cliente", "OK");
                 return;
             }
 
@@ -79,28 +151,30 @@ namespace PurificadoraApp.Views
             // Crear entrega local
             var entrega = new EntregaLocal
             {
+                ClienteId = _clienteSeleccionado.Id,
+                ClienteNombre = _clienteSeleccionado.NombreCompleto,
+                Direccion = _clienteSeleccionado.Direccion,
                 RepartidorId = _repartidorId,
                 RepartidorNombre = _repartidorNombre,
-                ClienteNombre = TxtCliente.Text,
-                Direccion = TxtDireccion.Text,
                 CantidadGarrafones = cantidad,
                 FechaHoraRegistro = DateTime.Now,
-                EstadoSync = 0, // Pendiente de sincronizar
+                EstadoSync = 0,
                 Version = 1
             };
 
-            // Guardar localmente
             await _localDbService.GuardarEntrega(entrega);
 
             // Limpiar campos
-            TxtCliente.Text = string.Empty;
-            TxtDireccion.Text = string.Empty;
             TxtCantidad.Text = string.Empty;
+            _clienteSeleccionado = null;
+            BtnRegistrar.IsEnabled = false;
+            LblClienteSeleccionado.Text = string.Empty;
+            LblDireccionSeleccionada.Text = string.Empty;
+            FrameClienteSeleccionado.IsVisible = false;
 
-            // Recargar lista
             CargarEntregasPendientes();
 
-            await DisplayAlert("Éxito", "Entrega registrada correctamente (offline)", "OK");
+            await DisplayAlert("Éxito", "Entrega registrada correctamente", "OK");
         }
 
         private async void OnSincronizarClicked(object sender, EventArgs e)
@@ -121,12 +195,27 @@ namespace PurificadoraApp.Views
             BtnSincronizar.IsEnabled = true;
             BtnSincronizar.Text = "Sincronizar Entregas";
 
-            // Recargar lista
             CargarEntregasPendientes();
             VerificarConexion();
 
             await DisplayAlert("Sincronización Completa",
                 $"Entregas subidas: {subidos}\nDatos descargados: {bajados}", "OK");
+        }
+
+        private async void OnLogoutClicked(object sender, EventArgs e)
+        {
+            var confirmar = await DisplayAlert("Cerrar Sesión", "¿Está seguro que desea cerrar sesión?", "Sí", "No");
+            if (confirmar)
+            {
+                Preferences.Remove("usuario_actual");
+                Preferences.Remove("access_token");
+                Application.Current.MainPage = new NavigationPage(new Views.LoginPage());
+            }
+        }
+
+        private async void OnSyncManualClicked(object sender, EventArgs e)
+        {
+            await OnSincronizarClicked(sender, e);
         }
     }
 }
