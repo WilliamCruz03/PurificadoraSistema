@@ -12,7 +12,7 @@
     <ScrollView>
         <VerticalStackLayout Spacing="20" Padding="30" VerticalOptions="Center">
 
-            <Image Source="logo.png" HeightRequest="100" HorizontalOptions="Center" />
+            <Image Source="dotnet_bot.png" HeightRequest="100" HorizontalOptions="Center" />
 
             <Label Text="Purificadora App" 
                    FontSize="28" 
@@ -41,11 +41,6 @@
 
             <ActivityIndicator IsVisible="{Binding IsLoading}" 
                                IsRunning="{Binding IsLoading}" />
-
-            <Button Text="¿Olvidaste tu contraseña?" 
-                    Command="{Binding OlvidePasswordCommand}"
-                    BackgroundColor="Transparent"
-                    TextColor="Blue" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

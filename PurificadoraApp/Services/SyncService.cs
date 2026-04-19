@@ -1,38 +1,37 @@
 ﻿using Supabase;
 using PurificadoraApp.Models;
-using SQLite;
 using System.Text.Json;
 using Supabase.Postgrest.Models;
-using Supabase.Postgrest.Attributes;
+using Microsoft.Maui.Networking;
 
 namespace PurificadoraApp.Services
 {
     // Clase que representa la tabla 'entregas' en Supabase
-    [Table("entregas")]
+    [Supabase.Postgrest.Attributes.Table("entregas")]
     public class EntregaRemota : BaseModel
     {
-        [PrimaryKey("id")]
+        [Supabase.Postgrest.Attributes.PrimaryKey("id")]
         public string Id { get; set; } = string.Empty;
 
-        [Column("repartidor_id")]
+        [Supabase.Postgrest.Attributes.Column("repartidor_id")]
         public string RepartidorId { get; set; } = string.Empty;
 
-        [Column("repartidor_nombre")]
+        [Supabase.Postgrest.Attributes.Column("repartidor_nombre")]
         public string RepartidorNombre { get; set; } = string.Empty;
 
-        [Column("cliente_nombre")]
+        [Supabase.Postgrest.Attributes.Column("cliente_nombre")]
         public string ClienteNombre { get; set; } = string.Empty;
 
-        [Column("direccion")]
+        [Supabase.Postgrest.Attributes.Column("direccion")]
         public string Direccion { get; set; } = string.Empty;
 
-        [Column("cantidad_garrafones")]
+        [Supabase.Postgrest.Attributes.Column("cantidad_garrafones")]
         public int CantidadGarrafones { get; set; }
 
-        [Column("fecha_hora_registro")]
+        [Supabase.Postgrest.Attributes.Column("fecha_hora_registro")]
         public DateTime FechaHoraRegistro { get; set; }
 
-        [Column("version")]
+        [Supabase.Postgrest.Attributes.Column("version")]
         public int Version { get; set; }
     }
 
@@ -40,15 +39,11 @@ namespace PurificadoraApp.Services
     {
         private readonly Supabase.Client _supabaseClient;
         private readonly LocalDbService _localDbService;
-        private readonly SQLiteAsyncConnection _database;
 
         public SyncService(Supabase.Client supabaseClient, LocalDbService localDbService)
         {
             _supabaseClient = supabaseClient;
             _localDbService = localDbService;
-
-            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "purificadora.db3");
-            _database = new SQLiteAsyncConnection(dbPath);
         }
 
         // Verificar si hay conexión a internet
@@ -90,7 +85,7 @@ namespace PurificadoraApp.Services
                         Version = entregaLocal.Version + 1
                     };
 
-                    // Insertar en Supabase - CORREGIDO
+                    // Insertar en Supabase
                     var response = await _supabaseClient.From<EntregaRemota>().Insert(entregaRemota);
 
                     // Actualizar estado local
@@ -117,7 +112,6 @@ namespace PurificadoraApp.Services
                 // Obtener entregas de Supabase (solo últimas 30 días)
                 var desde = DateTime.Now.AddDays(-30);
 
-                // CORREGIDO: usar el tipo EntregaRemota
                 var response = await _supabaseClient
                     .From<EntregaRemota>()
                     .Where(x => x.FechaHoraRegistro >= desde)
@@ -128,22 +122,27 @@ namespace PurificadoraApp.Services
 
                 foreach (var item in entregasRemotas)
                 {
-                    // Guardar en SQLite local (como referencia para el repartidor)
-                    var entregaLocal = new EntregaLocal
+                    // Verificar si ya existe localmente para no duplicar
+                    var existentes = await _localDbService.GetAllEntregas();
+                    if (!existentes.Any(e => e.IdRemoto == item.Id))
                     {
-                        IdRemoto = item.Id,
-                        RepartidorId = item.RepartidorId,
-                        RepartidorNombre = item.RepartidorNombre,
-                        ClienteNombre = item.ClienteNombre,
-                        Direccion = item.Direccion,
-                        CantidadGarrafones = item.CantidadGarrafones,
-                        FechaHoraRegistro = item.FechaHoraRegistro,
-                        EstadoSync = 1, // Ya sincronizado
-                        Version = item.Version
-                    };
+                        // Guardar en SQLite local (como referencia para el repartidor)
+                        var entregaLocal = new EntregaLocal
+                        {
+                            IdRemoto = item.Id,
+                            RepartidorId = item.RepartidorId,
+                            RepartidorNombre = item.RepartidorNombre,
+                            ClienteNombre = item.ClienteNombre,
+                            Direccion = item.Direccion,
+                            CantidadGarrafones = item.CantidadGarrafones,
+                            FechaHoraRegistro = item.FechaHoraRegistro,
+                            EstadoSync = 1, // Ya sincronizado
+                            Version = item.Version
+                        };
 
-                    await _localDbService.GuardarEntrega(entregaLocal);
-                    descargados++;
+                        await _localDbService.GuardarEntrega(entregaLocal);
+                        descargados++;
+                    }
                 }
 
                 return descargados;

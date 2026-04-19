@@ -437,4 +437,6 @@
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <local:IsNotNullOrEmptyConverter x:Key="IsNotNullOrEmpty" />
+    <local:InverseBoolConverter x:Key="InverseBool" />
 </ResourceDictionary>

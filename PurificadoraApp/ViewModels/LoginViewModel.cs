@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Supabase;
 using PurificadoraApp.Models;
 using PurificadoraApp.Services;
+using System.Text.Json;
 
 namespace PurificadoraApp.ViewModels
 {
