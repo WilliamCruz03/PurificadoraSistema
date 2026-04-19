@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:PurificadoraApp.ViewModels"
+             x:Class="PurificadoraApp.Views.LoginPage"
+             Title="Iniciar Sesión">
+
+    <ContentPage.BindingContext>
+        <viewmodel:LoginViewModel />
+    </ContentPage.BindingContext>
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="30" VerticalOptions="Center">
+
+            <Image Source="logo.png" HeightRequest="100" HorizontalOptions="Center" />
+
+            <Label Text="Purificadora App" 
+                   FontSize="28" 
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+            <Entry Placeholder="Email" 
+                   Text="{Binding Email}" 
+                   Keyboard="Email"
+                   ReturnType="Next" />
+
+            <Entry Placeholder="Contraseña" 
+                   Text="{Binding Password}" 
+                   IsPassword="True"
+                   ReturnType="Done" />
+
+            <Label Text="{Binding MensajeError}" 
+                   TextColor="Red" 
+                   IsVisible="{Binding MensajeError, Converter={StaticResource IsNotNullOrEmpty}}"
+                   FontSize="12" />
+
+            <Button Text="Iniciar Sesión" 
+                    Command="{Binding IniciarSesionCommand}"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBool}}"
+                    HorizontalOptions="Fill" />
+
+            <ActivityIndicator IsVisible="{Binding IsLoading}" 
+                               IsRunning="{Binding IsLoading}" />
+
+            <Button Text="¿Olvidaste tu contraseña?" 
+                    Command="{Binding OlvidePasswordCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="Blue" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
