@@ -5,6 +5,13 @@ namespace PurificadoraApp;
 
 public static class MauiProgram
 {
+    public static MauiApp CurrentApp { get; private set; }
+
+    public static T GetService<T>() where T : class
+    {
+        return CurrentApp?.Services.GetService<T>();
+    }
+
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
@@ -16,21 +23,19 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        // ✅ Registrar servicios (TODOS fuera del lambda)
+        // Registrar servicios
         builder.Services.AddSingleton<CustomSessionHandler>();
-        builder.Services.AddSingleton<LocalDbService>();  // ✅ MOVER AQUÍ
+        builder.Services.AddSingleton<LocalDbService>();
 
         // Registrar el cliente de Supabase
         builder.Services.AddSingleton(provider =>
         {
             var sessionHandler = provider.GetRequiredService<CustomSessionHandler>();
-            // ❌ ELIMINAR esta línea de aquí: builder.Services.AddSingleton<LocalDbService>();
 
             var options = new SupabaseOptions
             {
                 AutoRefreshToken = true,
-                AutoConnectRealtime = true,
-                SessionHandler = sessionHandler
+                AutoConnectRealtime = false
             };
 
             var client = new Supabase.Client(
@@ -39,12 +44,17 @@ public static class MauiProgram
                 options
             );
 
+            // ❌ ELIMINA esta línea: client.Initialize();
+
+            // Cargar sesión guardada
             client.Auth.LoadSession();
+
             return client;
         });
 
         builder.Services.AddSingleton<SyncService>();
 
-        return builder.Build();
+        CurrentApp = builder.Build();
+        return CurrentApp;
     }
 }

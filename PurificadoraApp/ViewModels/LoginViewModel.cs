@@ -4,6 +4,7 @@ using Supabase;
 using PurificadoraApp.Models;
 using PurificadoraApp.Services;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace PurificadoraApp.ViewModels
 {
@@ -12,90 +13,136 @@ namespace PurificadoraApp.ViewModels
         private readonly Supabase.Client _supabaseClient;
         private readonly LocalDbService _localDbService;
 
-        [ObservableProperty]
-        private string email = string.Empty;
+        private string _email = string.Empty;
+        private string _password = string.Empty;
+        private string _mensajeError = string.Empty;
+        private bool _isLoading;
 
-        [ObservableProperty]
-        private string password = string.Empty;
+        public string Email
+        {
+            get => _email;
+            set => SetProperty(ref _email, value);
+        }
 
-        [ObservableProperty]
-        private string mensajeError = string.Empty;
+        public string Password
+        {
+            get => _password;
+            set => SetProperty(ref _password, value);
+        }
 
-        [ObservableProperty]
-        private bool isLoading;
+        public string MensajeError
+        {
+            get => _mensajeError;
+            set => SetProperty(ref _mensajeError, value);
+        }
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
+
+        public LoginViewModel()
+        {
+            _supabaseClient = null!;
+            _localDbService = null!;
+        }
 
         public LoginViewModel(Supabase.Client supabaseClient, LocalDbService localDbService)
         {
             _supabaseClient = supabaseClient;
             _localDbService = localDbService;
+
+            // Diagnóstico
+            Debug.WriteLine("LoginViewModel: Constructor llamado");
+            Debug.WriteLine($"Supabase Client es null? {_supabaseClient == null}");
+            Debug.WriteLine($"LocalDbService es null? {_localDbService == null}");
         }
 
         [RelayCommand]
         private async Task IniciarSesion()
         {
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
-            {
-                MensajeError = "Por favor ingrese email y contraseña";
-                return;
-            }
-
-            IsLoading = true;
-            MensajeError = string.Empty;
-
             try
             {
+                Debug.WriteLine("IniciarSesion: Iniciando...");
+
+                if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+                {
+                    MensajeError = "Por favor ingrese email y contraseña";
+                    Debug.WriteLine("IniciarSesion: Email o Password vacíos");
+                    return;
+                }
+
+                IsLoading = true;
+                MensajeError = string.Empty;
+
+                // Verificar que el cliente no sea null
+                if (_supabaseClient == null)
+                {
+                    MensajeError = "Error de conexión: Cliente no inicializado";
+                    Debug.WriteLine("IniciarSesion: _supabaseClient es NULL");
+                    return;
+                }
+
+                if (_supabaseClient.Auth == null)
+                {
+                    MensajeError = "Error de conexión: Auth no disponible";
+                    Debug.WriteLine("IniciarSesion: _supabaseClient.Auth es NULL");
+                    return;
+                }
+
+                Debug.WriteLine($"IniciarSesion: Intentando login con {Email}");
+
                 // Intentar autenticar con Supabase
                 var session = await _supabaseClient.Auth.SignIn(Email, Password);
 
+                Debug.WriteLine($"IniciarSesion: Session obtenida - Es null? {session == null}");
+
                 if (session != null && session.User != null)
                 {
-                    // Obtener el rol del usuario desde los metadatos
+                    Debug.WriteLine($"IniciarSesion: Usuario ID: {session.User.Id}");
+
                     var rol = session.User.UserMetadata?.TryGetValue("rol", out var rolObj) == true
                         ? rolObj?.ToString() ?? "Repartidor"
                         : "Repartidor";
 
-                    // Guardar información de la sesión localmente
+                    var nombre = session.User.UserMetadata?.TryGetValue("nombre", out var nombreObj) == true
+                        ? nombreObj?.ToString() ?? session.User.Email!
+                        : session.User.Email!;
+
                     var usuario = new UsuarioSesion
                     {
                         Id = session.User.Id!,
                         Email = session.User.Email!,
-                        Nombre = session.User.UserMetadata?.TryGetValue("nombre", out var nombre) == true
-                            ? nombre?.ToString() ?? session.User.Email!
-                            : session.User.Email!,
+                        Nombre = nombre,
                         Rol = rol,
                         FechaInicio = DateTime.Now
                     };
 
-                    // Guardar en preferencias locales
                     Preferences.Set("usuario_actual", JsonSerializer.Serialize(usuario));
                     Preferences.Set("access_token", session.AccessToken);
 
-                    // Redirigir según el rol
-                    if (rol == "Admin")
-                    {
-                        await Shell.Current.GoToAsync("//admin/dashboard");
-                    }
-                    else
-                    {
-                        await Shell.Current.GoToAsync("//repartidor/inicio");
-                    }
+                    Debug.WriteLine($"IniciarSesion: Usuario guardado - Rol: {rol}");
+
+                    // Cambiar la navegación aquí
+                    Application.Current.MainPage = new MainPage();
+                }
+                else
+                {
+                    MensajeError = "Error: No se pudo obtener la sesión del usuario";
+                    Debug.WriteLine("IniciarSesion: Session o User es null");
                 }
             }
             catch (Exception ex)
             {
                 MensajeError = $"Error al iniciar sesión: {ex.Message}";
+                Debug.WriteLine($"IniciarSesion EXCEPCIÓN: {ex.Message}");
+                Debug.WriteLine($"StackTrace: {ex.StackTrace}");
             }
             finally
             {
                 IsLoading = false;
             }
-        }
-
-        [RelayCommand]
-        private async Task IrARegistro()
-        {
-            // Implementar registro de usuarios (solo para administradores)
-            await Shell.Current.DisplayAlert("Info", "Contacte al administrador para crear una cuenta", "OK");
         }
     }
 }

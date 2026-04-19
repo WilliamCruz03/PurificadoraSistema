@@ -3,12 +3,21 @@
     x:Class="PurificadoraApp.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:PurificadoraApp"
+    xmlns:views="clr-namespace:PurificadoraApp.Views"
     Title="PurificadoraApp">
 
+    <!-- Registrar la ruta de Login -->
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Login"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage" />
+
+    <!-- Para después: pantalla del repartidor -->
+    <!--
+    <ShellContent
+        Title="Repartidor"
+        ContentTemplate="{DataTemplate views:RepartidorPage}"
+        Route="RepartidorPage" />
+    -->
 
 </Shell>

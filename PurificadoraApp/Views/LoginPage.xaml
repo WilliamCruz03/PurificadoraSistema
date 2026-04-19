@@ -31,12 +31,10 @@
 
             <Label Text="{Binding MensajeError}" 
                    TextColor="Red" 
-                   IsVisible="{Binding MensajeError, Converter={StaticResource IsNotNullOrEmpty}}"
                    FontSize="12" />
 
             <Button Text="Iniciar Sesión" 
                     Command="{Binding IniciarSesionCommand}"
-                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBool}}"
                     HorizontalOptions="Fill" />
 
             <ActivityIndicator IsVisible="{Binding IsLoading}" 

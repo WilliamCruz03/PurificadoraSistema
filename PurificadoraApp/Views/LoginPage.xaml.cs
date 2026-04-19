@@ -1,9 +1,18 @@
-namespace PurificadoraApp.Views;
+using PurificadoraApp.Services;
+using PurificadoraApp.ViewModels;
 
-public partial class LoginPage : ContentView
+namespace PurificadoraApp.Views
 {
-	public LoginPage()
-	{
-		InitializeComponent();
-	}
+    public partial class LoginPage : ContentPage
+    {
+        public LoginPage()
+        {
+            InitializeComponent();
+
+            var supabaseClient = MauiProgram.GetService<Supabase.Client>();
+            var localDbService = MauiProgram.GetService<LocalDbService>();
+
+            BindingContext = new LoginViewModel(supabaseClient, localDbService);
+        }
+    }
 }
