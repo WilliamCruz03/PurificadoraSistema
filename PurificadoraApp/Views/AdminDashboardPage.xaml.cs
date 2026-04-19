@@ -34,7 +34,7 @@ namespace PurificadoraApp.Views
             AplicarFiltros();
             CalcularEstadisticas();
             CargarRepartidores();
-            DibujarGrafico();
+            // DibujarGrafico();  // COMENTADO TEMPORALMENTE
 
             ListaEntregas.ItemsSource = null;
             ListaEntregas.ItemsSource = _todasEntregas.OrderByDescending(e => e.FechaHoraRegistro).ToList();
