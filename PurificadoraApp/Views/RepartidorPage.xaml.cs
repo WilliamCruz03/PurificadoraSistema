@@ -97,14 +97,35 @@ namespace PurificadoraApp.Views
 
             try
             {
-                var response = await _supabaseClient.Rpc("search_clientes", new { search_term = e.NewTextValue });
-                if (response.Content != null)
+                // Primero buscar en clientes locales
+                var clientesLocales = await _localDbService.GetAllClientes();
+                _clientesEncontrados = clientesLocales
+                    .Where(c => c.NombreCompleto.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase) ||
+                               (c.Telefono?.Contains(e.NewTextValue) ?? false))
+                    .Select(c => new Cliente
+                    {
+                        Id = c.Id,
+                        Nombre = c.Nombre,
+                        Apellidos = c.Apellidos,
+                        Direccion = c.Direccion,
+                        Telefono = c.Telefono,
+                        Email = c.Email
+                    })
+                    .ToList();
+
+                // Si no hay resultados en local, buscar en Supabase
+                if (!_clientesEncontrados.Any() && await _syncService.HasInternetConnection())
                 {
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    _clientesEncontrados = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
-                    ListaClientesResultados.ItemsSource = _clientesEncontrados;
-                    ListaClientesResultados.IsVisible = _clientesEncontrados.Any();
+                    var response = await _supabaseClient.Rpc("search_clientes", new { search_term = e.NewTextValue });
+                    if (response.Content != null)
+                    {
+                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        _clientesEncontrados = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
+                    }
                 }
+
+                ListaClientesResultados.ItemsSource = _clientesEncontrados;
+                ListaClientesResultados.IsVisible = _clientesEncontrados.Any();
             }
             catch (Exception ex)
             {

@@ -113,5 +113,44 @@ namespace PurificadoraApp.Services
                 return 0;
             }
         }
+
+        // En LocalDbService.cs, agregar:
+        private async Task InitializeDatabase()
+        {
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "purificadora.db3");
+            _database = new SQLiteAsyncConnection(dbPath);
+            await _database.CreateTableAsync<EntregaLocal>();
+            await _database.CreateTableAsync<ClienteLocal>(); // Nueva tabla
+        }
+
+        // Nuevo modelo ClienteLocal
+        public class ClienteLocal
+        {
+            [PrimaryKey]
+            public string Id { get; set; } = string.Empty;
+            public string Nombre { get; set; } = string.Empty;
+            public string? Apellidos { get; set; }
+            public string Direccion { get; set; } = string.Empty;
+            public string? Telefono { get; set; }
+            public string? Email { get; set; }
+            public DateTime CreatedAt { get; set; }
+            public DateTime UpdatedAt { get; set; }
+
+            public string NombreCompleto => string.IsNullOrWhiteSpace(Apellidos)
+                ? Nombre
+                : $"{Nombre} {Apellidos}";
+        }
+
+        // Guardar cliente
+        public async Task<int> GuardarCliente(ClienteLocal cliente)
+        {
+            return await _database.InsertOrReplaceAsync(cliente);
+        }
+
+        // Obtener todos los clientes
+        public async Task<List<ClienteLocal>> GetAllClientes()
+        {
+            return await _database.Table<ClienteLocal>().ToListAsync();
+        }
     }
 }

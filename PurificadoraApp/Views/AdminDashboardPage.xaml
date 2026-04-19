@@ -58,12 +58,16 @@
 
         <!-- Botones flotantes -->
         <StackLayout Grid.Row="3" Orientation="Horizontal" HorizontalOptions="End" Spacing="10" Margin="0,0,20,20">
+            <Button x:Name="BtnSyncNow" Text="🔄 Sincronizar" BackgroundColor="#2c3e50" TextColor="White" FontSize="14"
+        CornerRadius="30" WidthRequest="100" HeightRequest="50" Clicked="OnSyncNowClicked"/>
             <Button x:Name="BtnSyncChanges" Text="🔄" BackgroundColor="#f39c12" TextColor="White" FontSize="20"
             CornerRadius="30" WidthRequest="50" HeightRequest="50" Clicked="OnSyncChangesClicked"/>
             <Button x:Name="BtnGestionarUsuarios" Text="👥" BackgroundColor="#3498db" TextColor="White" FontSize="20"
             CornerRadius="30" WidthRequest="50" HeightRequest="50" Clicked="OnGestionarUsuariosClicked"/>
             <Button x:Name="BtnGestionarClientes" Text="👤" BackgroundColor="#9b59b6" TextColor="White" FontSize="20"
             CornerRadius="30" WidthRequest="50" HeightRequest="50" Clicked="OnGestionarClientesClicked"/>
+            <Button x:Name="BtnEstadisticas" Text="📊" BackgroundColor="#8e44ad" TextColor="White" FontSize="20"
+            CornerRadius="30" WidthRequest="50" HeightRequest="50" Clicked="OnEstadisticasClicked"/>
         </StackLayout>
     </Grid>
 </ContentPage>

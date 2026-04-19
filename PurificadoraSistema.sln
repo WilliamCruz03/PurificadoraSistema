@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.37111.16 d17.14
+VisualStudioVersion = 17.14.37111.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PurificadoraApp", "PurificadoraApp\PurificadoraApp.csproj", "{9BC2474E-FE9C-4B1E-86EC-9993207C929B}"
 EndProject
@@ -13,8 +13,10 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{9BC2474E-FE9C-4B1E-86EC-9993207C929B}.Release|Any CPU.Deploy.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

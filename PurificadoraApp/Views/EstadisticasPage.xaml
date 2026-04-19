@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PurificadoraApp.Views.EstadisticasPage"
+             Title="Estadísticas"
+             BackgroundColor="#f5f5f5">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <Label Text="Resumen de Entregas" FontSize="22" FontAttributes="Bold" HorizontalOptions="Center"/>
+
+            <!-- Tarjetas de resumen -->
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                <Frame BackgroundColor="#2c3e50" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout>
+                        <Label x:Name="LblTotalEntregas" Text="0" TextColor="White" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Total Entregas" TextColor="White" FontSize="14" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Grid.Column="1" BackgroundColor="#27ae60" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout>
+                        <Label x:Name="LblTotalGarrafones" Text="0" TextColor="White" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Total Garrafones" TextColor="White" FontSize="14" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Grid.Row="1" BackgroundColor="#3498db" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout>
+                        <Label x:Name="LblPromedio" Text="0" TextColor="White" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Promedio x Entrega" TextColor="White" FontSize="14" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Grid.Row="1" Grid.Column="1" BackgroundColor="#e67e22" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout>
+                        <Label x:Name="LblRepartidores" Text="0" TextColor="White" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Repartidores" TextColor="White" FontSize="14" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- Top Repartidores -->
+            <Label Text="🏆 Top Repartidores" FontSize="18" FontAttributes="Bold" Margin="0,20,0,5"/>
+            <CollectionView x:Name="ListaTopRepartidores" HeightRequest="200">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="10" ColumnDefinitions="*,Auto" BackgroundColor="White" Margin="5">
+                            <Label Text="{Binding Nombre}" FontAttributes="Bold"/>
+                            <Label Grid.Column="1" Text="{Binding Total}" TextColor="#27ae60"/>
+                            <Label Grid.Column="1" Text=" entregas" TextColor="#27ae60"/>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Últimas entregas -->
+            <Label Text="📋 Últimas Entregas" FontSize="18" FontAttributes="Bold" Margin="0,20,0,5"/>
+            <CollectionView x:Name="ListaUltimasEntregas" HeightRequest="250">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" BackgroundColor="White" Margin="5">
+                            <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
+                            <Label Text="{Binding CantidadGarrafones}" Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray"/>
+                            <Label Text=" garrafones" Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray" Margin="40,0,0,0"/>
+                            <Label Text="{Binding FechaHoraRegistro}" Grid.Row="0" Grid.Column="1" FontSize="12" TextColor="Gray"/>
+                            <Label Text="{Binding RepartidorNombre}" Grid.Row="1" Grid.Column="1" FontSize="12" TextColor="#3498db"/>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Cerrar" Clicked="OnCerrarClicked" BackgroundColor="#3498db" TextColor="White" CornerRadius="10" HeightRequest="50"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

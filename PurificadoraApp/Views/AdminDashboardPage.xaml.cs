@@ -222,9 +222,18 @@ namespace PurificadoraApp.Views
             await Navigation.PushAsync(new ClientesPage());
         }
 
-        protected override void OnAppearing()
+        protected override async void OnAppearing()
         {
             base.OnAppearing();
+
+            // Forzar sincronización al abrir el dashboard
+            if (await _syncService.HasInternetConnection())
+            {
+                var syncService = MauiProgram.GetService<SyncService>();
+                var (subidos, bajados, clientes) = await syncService.SyncAll();
+                Debug.WriteLine($"Sincronización inicial: Subidos={subidos}, Bajados={bajados}, Clientes={clientes}");
+            }
+
             CargarDatos();
         }
 
@@ -289,9 +298,26 @@ namespace PurificadoraApp.Views
         {
             var syncService = MauiProgram.GetService<SyncService>();
             var (subidos, bajados) = await syncService.SyncAll();
-            await DisplayAlert("Sincronización",
-                $"Cambios subidos: {subidos}\nDatos descargados: {bajados}", "OK");
+
+            await ToastService.ShowSyncResult(subidos, bajados);
             await RecargarDatosCompletos();
+        }
+
+        private async void OnEstadisticasClicked(object sender, EventArgs e)
+        {
+            await Navigation.PushModalAsync(new EstadisticasPage());
+        }
+
+        private async void OnSyncNowClicked(object sender, EventArgs e)
+        {
+            var syncService = MauiProgram.GetService<SyncService>();
+            var (subidos, bajados, clientes) = await syncService.SyncAll();
+
+            await DisplayAlert("Sincronización",
+                $"Entregas subidas: {subidos}\nEntregas descargadas: {bajados}\nClientes descargados: {clientes}",
+                "OK");
+
+            CargarDatos();
         }
     }
 }

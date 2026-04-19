@@ -188,5 +188,46 @@ namespace PurificadoraApp.Services
             var bajados = await SyncAdminDeliveries();
             return (subidos, bajados);
         }
+
+        // Descargar clientes desde Supabase
+        public async Task<int> SyncClientes()
+        {
+            if (!await HasInternetConnection())
+                return 0;
+
+            try
+            {
+                var response = await _supabaseClient.Rpc("get_all_clientes", new { });
+
+                if (response.Content != null)
+                {
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var clientes = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
+
+                    // Guardar clientes en SQLite local (crear tabla ClientesLocal)
+                    foreach (var cliente in clientes)
+                    {
+                        await _localDbService.GuardarCliente(cliente);
+                    }
+
+                    return clientes.Count;
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error al descargar clientes: {ex.Message}");
+                return 0;
+            }
+        }
+
+        // Modificar SyncAll para incluir clientes
+        public async Task<(int subidos, int bajados, int clientes)> SyncAll()
+        {
+            var subidos = await SyncUpdatedDeliveries();
+            var bajados = await SyncAdminDeliveries();
+            var clientes = await SyncClientes();
+            return (subidos, bajados, clientes);
+        }
     }
 }
