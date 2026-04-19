@@ -124,8 +124,16 @@ namespace PurificadoraApp.ViewModels
 
                     Debug.WriteLine($"IniciarSesion: Usuario guardado - Rol: {rol}");
 
-                    // Cambiar la navegación aquí
-                    Application.Current.MainPage = new MainPage();
+                    // Cambiar la navegación según el rol
+                    if (rol == "Admin")
+                    {
+                        Application.Current.MainPage = new NavigationPage(new Views.AdminDashboardPage());
+                    }
+                    else
+                    {
+                        Application.Current.MainPage = new NavigationPage(new Views.RepartidorPage());
+                    }
+
                 }
                 else
                 {

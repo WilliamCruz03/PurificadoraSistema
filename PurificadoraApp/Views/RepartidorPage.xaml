@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PurificadoraApp.Views.RepartidorPage"
+             Title="Registro de Entregas"
+             BackgroundColor="White">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="Nueva Entrega" 
+                   FontSize="24" 
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="#2c3e50"/>
+
+            <!-- Cliente -->
+            <Entry x:Name="TxtCliente" 
+                   Placeholder="Nombre del cliente" 
+                   PlaceholderColor="Gray"
+                   BackgroundColor="#f0f0f0"/>
+
+            <!-- Dirección -->
+            <Entry x:Name="TxtDireccion" 
+                   Placeholder="Dirección completa" 
+                   PlaceholderColor="Gray"
+                   BackgroundColor="#f0f0f0"/>
+
+            <!-- Cantidad de garrafones -->
+            <Entry x:Name="TxtCantidad" 
+                   Placeholder="Cantidad de garrafones" 
+                   PlaceholderColor="Gray"
+                   Keyboard="Numeric"
+                   BackgroundColor="#f0f0f0"/>
+
+            <!-- Estado de conexión -->
+            <StackLayout Orientation="Horizontal" Spacing="10" HorizontalOptions="Center">
+                <Image x:Name="ImgConexion" Source="cloud_off.png" HeightRequest="20"/>
+                <Label x:Name="LblEstadoConexion" Text="Sin conexión" TextColor="Red"/>
+            </StackLayout>
+
+            <!-- Botón Registrar -->
+            <Button x:Name="BtnRegistrar" 
+                    Text="Registrar Entrega" 
+                    BackgroundColor="#27ae60"
+                    TextColor="White"
+                    CornerRadius="10"
+                    HeightRequest="50"
+                    Clicked="OnRegistrarClicked"/>
+
+            <!-- Botón Sincronizar -->
+            <Button x:Name="BtnSincronizar" 
+                    Text="Sincronizar Entregas" 
+                    BackgroundColor="#3498db"
+                    TextColor="White"
+                    CornerRadius="10"
+                    HeightRequest="50"
+                    Clicked="OnSincronizarClicked"/>
+
+            <!-- Lista de entregas pendientes -->
+            <Label Text="Entregas Pendientes de Sincronizar" 
+                   FontSize="16" 
+                   FontAttributes="Bold"
+                   Margin="0,20,0,5"/>
+
+            <CollectionView x:Name="ListaPendientes" 
+                            HeightRequest="300">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                            <Label Text="{Binding ClienteNombre}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"/>
+                            <Label Text="{Binding CantidadGarrafones} garrafones" Grid.Row="1" Grid.Column="0" FontSize="12" TextColor="Gray"/>
+                            <Label Text="⏳" Grid.Row="0" Grid.Column="1" FontSize="20"/>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
