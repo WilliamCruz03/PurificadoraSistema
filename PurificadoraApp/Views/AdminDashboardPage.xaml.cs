@@ -1,6 +1,5 @@
 using PurificadoraApp.Models;
 using PurificadoraApp.Services;
-using Supabase.Interfaces;
 using System.Text.Json;
 
 namespace PurificadoraApp.Views
@@ -8,12 +7,14 @@ namespace PurificadoraApp.Views
     public partial class AdminDashboardPage : ContentPage
     {
         private readonly LocalDbService _localDbService;
+        private readonly Supabase.Client _supabaseClient;
         private List<EntregaLocal> _todasEntregas;
 
         public AdminDashboardPage()
         {
             InitializeComponent();
             _localDbService = MauiProgram.GetService<LocalDbService>();
+            _supabaseClient = MauiProgram.GetService<Supabase.Client>();
             DateFechaInicio.Date = DateTime.Now.AddDays(-30);
             DateFechaFin.Date = DateTime.Now;
             CargarDatos();
@@ -118,11 +119,11 @@ namespace PurificadoraApp.Views
 
         private async Task<string> SeleccionarCliente()
         {
-            var clientes = await _supabaseClient.Rpc("get_all_clientes", new { });
-            if (clientes.Content != null)
+            var response = await _supabaseClient.Rpc("get_all_clientes", new { });
+            if (response.Content != null)
             {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var listaClientes = JsonSerializer.Deserialize<List<Cliente>>(clientes.Content, options) ?? new List<Cliente>();
+                var listaClientes = JsonSerializer.Deserialize<List<Cliente>>(response.Content, options) ?? new List<Cliente>();
 
                 var opciones = listaClientes.Select(c => c.NombreCompleto).ToArray();
                 var resultado = await DisplayActionSheet("Seleccionar Cliente", "Cancelar", null, opciones);
@@ -151,7 +152,7 @@ namespace PurificadoraApp.Views
             var entrega = button?.CommandParameter as EntregaLocal;
             if (entrega == null) return;
 
-            var action = await DisplayActionSheet($"Editar: {entrega.ClienteNombre}", "Cancelar", null, "Cantidad", "Cliente", "Dirección");
+            var action = await DisplayActionSheet($"Editar: {entrega.ClienteNombre}", "Cancelar", null, "Cantidad", "Cliente");
 
             if (action == "Cantidad")
             {
@@ -167,36 +168,32 @@ namespace PurificadoraApp.Views
             }
             else if (action == "Cliente")
             {
-                var nuevoCliente = await DisplayPromptAsync("Editar", "Nuevo nombre:", initialValue: entrega.ClienteNombre);
-                if (!string.IsNullOrEmpty(nuevoCliente) && nuevoCliente != entrega.ClienteNombre)
+                var nuevoClienteId = await SeleccionarCliente();
+                if (!string.IsNullOrEmpty(nuevoClienteId))
                 {
-                    entrega.ClienteNombre = nuevoCliente;
-                    await _localDbService.ActualizarEntrega(entrega);
-                    CargarDatos();
-                }
-            }
-            else if (action == "Dirección")
-            {
-                var nuevaDireccion = await DisplayPromptAsync("Editar", "Nueva dirección:", initialValue: entrega.Direccion);
-                if (!string.IsNullOrEmpty(nuevaDireccion) && nuevaDireccion != entrega.Direccion)
-                {
-                    entrega.Direccion = nuevaDireccion;
-                    await _localDbService.ActualizarEntrega(entrega);
-                    CargarDatos();
+                    var nuevoCliente = await ObtenerClientePorId(nuevoClienteId);
+                    if (nuevoCliente != null)
+                    {
+                        entrega.ClienteId = nuevoCliente.Id;
+                        entrega.ClienteNombre = nuevoCliente.NombreCompleto;
+                        entrega.Direccion = nuevoCliente.Direccion;
+                        await _localDbService.ActualizarEntrega(entrega);
+                        CargarDatos();
+                    }
                 }
             }
         }
 
         private async void OnNuevoUsuarioClicked(object sender, EventArgs e)
         {
-            // Aquí implementaremos la creación de usuarios más adelante
-            await DisplayAlert("Info", "Funcionalidad para crear usuarios (próximamente)", "OK");
+            await Navigation.PushAsync(new GestionUsuariosPage());
         }
 
         private async void OnGestionarUsuariosClicked(object sender, EventArgs e)
         {
             await Navigation.PushAsync(new GestionUsuariosPage());
         }
+
         private async void OnGestionarClientesClicked(object sender, EventArgs e)
         {
             await Navigation.PushAsync(new ClientesPage());
@@ -205,7 +202,7 @@ namespace PurificadoraApp.Views
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            CargarDatos(); // Recargar al volver a la pantalla
+            CargarDatos();
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)
@@ -218,7 +215,5 @@ namespace PurificadoraApp.Views
                 Application.Current.MainPage = new NavigationPage(new Views.LoginPage());
             }
         }
-
     }
-
 }
