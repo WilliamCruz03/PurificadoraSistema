@@ -285,20 +285,12 @@ namespace PurificadoraApp.Views
                 var subidos = await _syncService.SyncUpdatedDeliveries();
                 var bajados = await _syncService.SyncAdminDeliveries();
 
-                if (subidos > 0 && bajados > 0)
-                    await DisplayAlert("Sincronización", $"✅ Subidos: {subidos}\n📥 Descargados: {bajados}", "OK");
-                else if (subidos > 0)
-                    await DisplayAlert("Sincronización", $"✅ Subidos: {subidos} cambios", "OK");
-                else if (bajados > 0)
-                    await DisplayAlert("Sincronización", $"📥 Descargados: {bajados} registros", "OK");
-                else
-                    await DisplayAlert("Sincronización", "📭 No hay cambios pendientes", "OK");
-
+                await ToastService.SyncResult(subidos, bajados);
                 CargarDatos();
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Error", $"❌ Error: {ex.Message}", "OK");
+                await ToastService.Error($"Error: {ex.Message}");
             }
             finally
             {
@@ -333,5 +325,6 @@ namespace PurificadoraApp.Views
             }
             CargarDatos();
         }
+
     }
 }

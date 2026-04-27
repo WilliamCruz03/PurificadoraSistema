@@ -145,13 +145,13 @@ namespace PurificadoraApp.Views
         {
             if (_clienteSeleccionado == null)
             {
-                await DisplayAlert("Error", "Debe seleccionar un cliente", "OK");
+                await ToastService.Error("Debe seleccionar un cliente");
                 return;
             }
 
             if (!int.TryParse(TxtCantidad.Text, out int cantidad) || cantidad <= 0)
             {
-                await DisplayAlert("Error", "Ingrese una cantidad válida de garrafones", "OK");
+                await ToastService.Error("Ingrese una cantidad válida");
                 return;
             }
 
@@ -181,7 +181,7 @@ namespace PurificadoraApp.Views
 
             CargarEntregasPendientes();
 
-            await DisplayAlert("Éxito", "Entrega registrada correctamente", "OK");
+            await ToastService.Success("Entrega registrada correctamente");
         }
 
         private async void OnSincronizarClicked(object sender, EventArgs e)
