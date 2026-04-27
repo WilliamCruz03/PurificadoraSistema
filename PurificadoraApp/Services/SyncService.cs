@@ -178,5 +178,33 @@ namespace PurificadoraApp.Services
             var bajados = await SyncAdminDeliveries();
             return (subidos, bajados);
         }
+
+        // Eliminar entregas en Supabase (para sincronización)
+        public async Task<int> SyncDeletedDeliveries()
+        {
+            if (!await HasInternetConnection())
+                return 0;
+
+            var eliminadas = await _localDbService.GetEntregasEliminadas();
+            int sincronizados = 0;
+
+            foreach (var entrega in eliminadas)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(entrega.IdRemoto))
+                    {
+                        await _supabaseClient.From<EntregaRemota>().Where(x => x.Id == entrega.IdRemoto).Delete();
+                        await _localDbService.EliminarEntregaPermanente(entrega.IdLocal);
+                        sincronizados++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error eliminando: {ex.Message}");
+                }
+            }
+            return sincronizados;
+        }
     }
 }

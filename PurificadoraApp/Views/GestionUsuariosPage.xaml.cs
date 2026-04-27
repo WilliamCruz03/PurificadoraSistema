@@ -65,76 +65,7 @@ namespace PurificadoraApp.Views
             var usuario = button?.CommandParameter as UserInfo;
             if (usuario == null) return;
 
-            bool hayCambios = false;
-            string nuevoNombre = null;
-            string nuevoRol = null;
-
-            var nombreResult = await DisplayPromptAsync("Editar Usuario", "Nombre:",
-                initialValue: usuario.Nombre, cancel: "Cancelar");
-
-            if (nombreResult != null)
-            {
-                if (string.IsNullOrWhiteSpace(nombreResult))
-                {
-                    await DisplayAlert("Error", "El nombre no puede estar vacío", "OK");
-                    return;
-                }
-                if (nombreResult != usuario.Nombre)
-                {
-                    nuevoNombre = nombreResult;
-                    hayCambios = true;
-                }
-            }
-            else
-            {
-                return;
-            }
-
-            var rolResult = await DisplayActionSheet("Rol del usuario", "Cancelar", null, "Repartidor", "Admin");
-            if (rolResult != "Cancelar")
-            {
-                if (rolResult != usuario.Rol)
-                {
-                    nuevoRol = rolResult;
-                    hayCambios = true;
-                }
-            }
-            else
-            {
-                return;
-            }
-
-            if (hayCambios)
-            {
-                try
-                {
-                    IndicatorCarga.IsVisible = true;
-                    IndicatorCarga.IsRunning = true;
-
-                    await _supabaseAdminClient.Rpc("update_user", new
-                    {
-                        p_user_id = usuario.Id,
-                        p_nombre = nuevoNombre,
-                        p_rol = nuevoRol
-                    });
-
-                    IndicatorCarga.IsVisible = false;
-                    IndicatorCarga.IsRunning = false;
-
-                    await DisplayAlert("Éxito", "Usuario actualizado correctamente", "OK");
-                    CargarUsuarios();
-                }
-                catch (Exception ex)
-                {
-                    IndicatorCarga.IsVisible = false;
-                    IndicatorCarga.IsRunning = false;
-                    await DisplayAlert("Error", $"No se pudo actualizar: {ex.Message}", "OK");
-                }
-            }
-            else
-            {
-                await DisplayAlert("Info", "No se realizaron cambios", "OK");
-            }
+            await Navigation.PushModalAsync(new FormularioEditarUsuarioPage(usuario));
         }
 
         private async void OnEliminarClicked(object sender, EventArgs e)

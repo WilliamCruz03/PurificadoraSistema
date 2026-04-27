@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PurificadoraApp.Views.FormularioClientePage"
+             Title="{Binding Titulo}"
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1a1a1a}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="15">
+
+                <Entry x:Name="TxtNombre" Placeholder="Nombre *" 
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtApellidos" Placeholder="Apellidos (opcional)" 
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtDireccion" Placeholder="Dirección *" 
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtTelefono" Placeholder="Teléfono (opcional)" 
+                       Keyboard="Telephone"
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtEmail" Placeholder="Email (opcional)" 
+                       Keyboard="Email"
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <StackLayout Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="10">
+            <Button x:Name="BtnGuardar" Text="Guardar" Clicked="OnGuardarClicked"
+                    BackgroundColor="#27ae60" TextColor="White" CornerRadius="10"
+                    HorizontalOptions="FillAndExpand"/>
+            <Button Text="Cancelar" Clicked="OnCancelarClicked"
+                    BackgroundColor="#7f8c8d" TextColor="White" CornerRadius="10"
+                    HorizontalOptions="FillAndExpand"/>
+        </StackLayout>
+
+        <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="3" 
+                           IsVisible="False" IsRunning="False" 
+                           HorizontalOptions="Center" VerticalOptions="Center"/>
+    </Grid>
+</ContentPage>

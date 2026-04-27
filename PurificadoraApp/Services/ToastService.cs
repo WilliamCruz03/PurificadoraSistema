@@ -1,4 +1,6 @@
-﻿namespace PurificadoraApp.Services
+﻿using Microsoft.Maui.Devices;
+
+namespace PurificadoraApp.Services
 {
     public static class ToastService
     {

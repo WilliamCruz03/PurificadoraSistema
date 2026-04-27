@@ -123,5 +123,31 @@ namespace PurificadoraApp.Services
                 return new List<Cliente>();
             }
         }
+
+        // Marcar entrega como eliminada
+        public async Task<int> MarcarComoEliminada(int idLocal)
+        {
+            var entrega = await _database.FindAsync<EntregaLocal>(idLocal);
+            if (entrega != null)
+            {
+                entrega.EstadoSync = 3; // 3 = Eliminada pendiente de sincronización
+                return await _database.UpdateAsync(entrega);
+            }
+            return 0;
+        }
+
+        // Obtener entregas marcadas como eliminadas
+        public async Task<List<EntregaLocal>> GetEntregasEliminadas()
+        {
+            return await _database.Table<EntregaLocal>()
+                .Where(e => e.EstadoSync == 3)
+                .ToListAsync();
+        }
+
+        // Eliminar permanentemente después de sincronizar
+        public async Task<int> EliminarEntregaPermanente(int idLocal)
+        {
+            return await _database.DeleteAsync<EntregaLocal>(idLocal);
+        }
     }
 }

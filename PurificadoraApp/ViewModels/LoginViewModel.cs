@@ -6,6 +6,7 @@ using PurificadoraApp.Services;
 using System.Text.Json;
 using System.Diagnostics;
 using Supabase.Gotrue;
+using Microsoft.Maui.Networking;
 
 namespace PurificadoraApp.ViewModels
 {
@@ -13,7 +14,6 @@ namespace PurificadoraApp.ViewModels
     {
         private readonly Supabase.Client _supabaseClient;
         private readonly LocalDbService _localDbService;
-        private readonly LicenciaService _licenciaService;
 
         private string _email = string.Empty;
         private string _password = string.Empty;
@@ -61,7 +61,6 @@ namespace PurificadoraApp.ViewModels
         {
             _supabaseClient = supabaseClient;
             _localDbService = localDbService;
-            _licenciaService = MauiProgram.GetService<LicenciaService>();
 
             // Verificar si hay sesión guardada al iniciar
             VerificarSesionGuardada();

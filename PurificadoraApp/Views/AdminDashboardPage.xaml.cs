@@ -169,11 +169,28 @@ namespace PurificadoraApp.Views
                     var confirmar = await DisplayAlert("Confirmar", $"¿Eliminar entrega de {entrega.ClienteNombre}?", "Sí", "No");
                     if (confirmar)
                     {
+                        // Eliminar localmente
                         await _localDbService.EliminarEntrega(entrega.IdLocal);
+
+                        // Si tiene ID remoto, también eliminar en Supabase
+                        if (!string.IsNullOrEmpty(entrega.IdRemoto) && await _syncService.HasInternetConnection())
+                        {
+                            try
+                            {
+                                await _supabaseClient.From<EntregaRemota>().Where(x => x.Id == entrega.IdRemoto).Delete();
+                                await ToastService.Success("Entrega eliminada en la nube");
+                            }
+                            catch (Exception ex)
+                            {
+                                await ToastService.Error($"Error al eliminar en nube: {ex.Message}");
+                            }
+                        }
+
+                        // Recargar datos (usar CargarDatos, no RecargarDatosCompletos)
                         CargarDatos();
+                        await ToastService.Success("Entrega eliminada");
                     }
                 }
-                ListaEntregas.SelectedItem = null;
             }
         }
 
