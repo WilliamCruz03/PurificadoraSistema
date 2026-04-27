@@ -7,8 +7,8 @@
 
     <Grid RowDefinitions="Auto,Auto,*">
 
-        <!-- Estado de conexión y repartidor -->
-        <Grid Grid.Row="0" Padding="10" ColumnDefinitions="*,Auto,Auto" BackgroundColor="#2c3e50">
+        <!-- Estado de conexión y repartidor - Fila 0 -->
+        <Grid Grid.Row="0" BackgroundColor="#2c3e50" Padding="10" ColumnDefinitions="*,Auto,Auto">
             <Label x:Name="LblRepartidorNombre" Text="Cargando..." TextColor="White" VerticalOptions="Center"/>
             <Button Grid.Column="1" Text="🔄" BackgroundColor="Transparent" 
                     TextColor="White" FontSize="18" Clicked="OnSyncManualClicked"
@@ -21,6 +21,7 @@
             </StackLayout>
         </Grid>
 
+        <!-- ScrollView con el contenido - Fila 1 -->
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="20" Spacing="15">
 
@@ -38,7 +39,7 @@
                            TextChanged="OnBuscarClienteChanged"
                            BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"/>
 
-                <!-- Lista de resultados de clientes -->
+                <!-- Lista de resultados -->
                 <CollectionView x:Name="ListaClientesResultados" 
                                 HeightRequest="200"
                                 IsVisible="False"
@@ -76,10 +77,9 @@
                     </VerticalStackLayout>
                 </Frame>
 
-                <!-- Cantidad de garrafones -->
+                <!-- Cantidad -->
                 <Entry x:Name="TxtCantidad" 
                        Placeholder="Cantidad de garrafones" 
-                       PlaceholderColor="Gray"
                        Keyboard="Numeric"
                        BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
                        TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
@@ -104,14 +104,13 @@
                         Clicked="OnSincronizarClicked"/>
 
                 <!-- Lista de entregas pendientes -->
-                <Label Text="Entregas Pendientes de Sincronizar" 
+                <Label Text="Entregas Pendientes" 
                        FontSize="16" 
                        FontAttributes="Bold"
                        Margin="0,20,0,5"
                        TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
 
-                <CollectionView x:Name="ListaPendientes" 
-                                HeightRequest="250">
+                <CollectionView x:Name="ListaPendientes" HeightRequest="250">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="10" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" 
@@ -136,9 +135,10 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- ActivityIndicator de carga - Agregar esto al final del Grid, antes de </Grid> -->
-        <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="3" IsVisible="False" IsRunning="False" 
-                   HorizontalOptions="Center" VerticalOptions="Center"
-                   Color="{AppThemeBinding Light=#2c3e50, Dark=#3498db}"/>
+        <!-- ActivityIndicator de carga -->
+        <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="2" IsVisible="False" IsRunning="False" 
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           Color="{AppThemeBinding Light=#2c3e50, Dark=#3498db}"/>
+
     </Grid>
 </ContentPage>

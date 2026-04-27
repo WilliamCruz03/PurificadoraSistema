@@ -53,44 +53,10 @@ namespace PurificadoraApp.Views
             }
         }
 
+
         private async void OnNuevoUsuarioClicked(object sender, EventArgs e)
         {
-            var email = await DisplayPromptAsync("Nuevo Usuario", "Email:", keyboard: Keyboard.Email);
-            if (string.IsNullOrEmpty(email)) return;
-
-            var password = await DisplayPromptAsync("Nuevo Usuario", "Contraseña:", keyboard: Keyboard.Text);
-            if (string.IsNullOrEmpty(password)) return;
-
-            var nombre = await DisplayPromptAsync("Nuevo Usuario", "Nombre completo:");
-            if (string.IsNullOrEmpty(nombre)) return;
-
-            var rol = await DisplayActionSheet("Rol del usuario", "Cancelar", null, "Repartidor", "Admin");
-
-            try
-            {
-                IndicatorCarga.IsVisible = true;
-                IndicatorCarga.IsRunning = true;
-
-                var response = await _supabaseAdminClient.Rpc("create_user", new
-                {
-                    p_email = email,
-                    p_password = password,
-                    p_nombre = nombre,
-                    p_rol = rol
-                });
-
-                IndicatorCarga.IsVisible = false;
-                IndicatorCarga.IsRunning = false;
-
-                await DisplayAlert("Éxito", $"Usuario {email} creado correctamente", "OK");
-                CargarUsuarios();
-            }
-            catch (Exception ex)
-            {
-                IndicatorCarga.IsVisible = false;
-                IndicatorCarga.IsRunning = false;
-                await DisplayAlert("Error", $"No se pudo crear el usuario: {ex.Message}", "OK");
-            }
+            await Navigation.PushModalAsync(new FormularioUsuarioPage());
         }
 
         private async void OnEditarClicked(object sender, EventArgs e)

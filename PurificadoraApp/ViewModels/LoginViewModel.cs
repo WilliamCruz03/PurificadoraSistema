@@ -5,6 +5,7 @@ using PurificadoraApp.Models;
 using PurificadoraApp.Services;
 using System.Text.Json;
 using System.Diagnostics;
+using Supabase.Gotrue;
 
 namespace PurificadoraApp.ViewModels
 {
@@ -12,11 +13,13 @@ namespace PurificadoraApp.ViewModels
     {
         private readonly Supabase.Client _supabaseClient;
         private readonly LocalDbService _localDbService;
+        private readonly LicenciaService _licenciaService;
 
         private string _email = string.Empty;
         private string _password = string.Empty;
         private string _mensajeError = string.Empty;
         private bool _isLoading;
+        private bool _isOfflineMode;
 
         public string Email
         {
@@ -42,6 +45,12 @@ namespace PurificadoraApp.ViewModels
             set => SetProperty(ref _isLoading, value);
         }
 
+        public bool IsOfflineMode
+        {
+            get => _isOfflineMode;
+            set => SetProperty(ref _isOfflineMode, value);
+        }
+
         public LoginViewModel()
         {
             _supabaseClient = null!;
@@ -52,11 +61,51 @@ namespace PurificadoraApp.ViewModels
         {
             _supabaseClient = supabaseClient;
             _localDbService = localDbService;
+            _licenciaService = MauiProgram.GetService<LicenciaService>();
 
-            // Diagnóstico
-            Debug.WriteLine("LoginViewModel: Constructor llamado");
-            Debug.WriteLine($"Supabase Client es null? {_supabaseClient == null}");
-            Debug.WriteLine($"LocalDbService es null? {_localDbService == null}");
+            // Verificar si hay sesión guardada al iniciar
+            VerificarSesionGuardada();
+        }
+
+        private async void VerificarSesionGuardada()
+        {
+            var token = Preferences.Get("access_token", string.Empty);
+            var usuarioJson = Preferences.Get("usuario_actual", string.Empty);
+            var ultimoLogin = Preferences.Get("ultimo_login_exitoso", string.Empty);
+
+            if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(usuarioJson))
+            {
+                // Verificar si estamos offline
+                var tieneInternet = await TieneInternet();
+
+                if (!tieneInternet)
+                {
+                    // Modo offline - usar sesión guardada
+                    var usuario = JsonSerializer.Deserialize<UsuarioSesion>(usuarioJson);
+                    if (usuario != null)
+                    {
+                        IsOfflineMode = true;
+                        MensajeError = "⚠️ Modo offline - Usando sesión guardada";
+
+                        // Navegar directamente
+                        await Task.Delay(500); // Pequeña pausa para mostrar el mensaje
+                        await NavegarSegunRol(usuario.Rol);
+                    }
+                }
+            }
+        }
+
+        private async Task<bool> TieneInternet()
+        {
+            try
+            {
+                var current = Connectivity.Current;
+                return current.NetworkAccess == NetworkAccess.Internet;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         [RelayCommand]
@@ -68,96 +117,176 @@ namespace PurificadoraApp.ViewModels
 
                 if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
                 {
-                    MensajeError = "Por favor ingrese email y contraseña";
-                    Debug.WriteLine("IniciarSesion: Email o Password vacíos");
+                    MensajeError = "Por favor ingrese usuario/email y contraseña";
                     return;
                 }
 
                 IsLoading = true;
                 MensajeError = string.Empty;
+                IsOfflineMode = false;
 
-                // Verificar que el cliente no sea null
-                if (_supabaseClient == null)
+                // Verificar conexión a internet
+                var tieneInternet = await TieneInternet();
+
+                if (!tieneInternet)
                 {
-                    MensajeError = "Error de conexión: Cliente no inicializado";
-                    Debug.WriteLine("IniciarSesion: _supabaseClient es NULL");
-                    return;
-                }
-
-                if (_supabaseClient.Auth == null)
-                {
-                    MensajeError = "Error de conexión: Auth no disponible";
-                    Debug.WriteLine("IniciarSesion: _supabaseClient.Auth es NULL");
-                    return;
-                }
-
-                Debug.WriteLine($"IniciarSesion: Intentando login con {Email}");
-
-                // Intentar autenticar con Supabase
-                var session = await _supabaseClient.Auth.SignIn(Email, Password);
-
-                Debug.WriteLine($"IniciarSesion: Session obtenida - Es null? {session == null}");
-
-                if (session != null && session.User != null)
-                {
-                    Debug.WriteLine($"IniciarSesion: Usuario ID: {session.User.Id}");
-
-                    // Obtener rol de los metadatos
-                    var rol = session.User.UserMetadata?.TryGetValue("rol", out var rolObj) == true
-                        ? rolObj?.ToString() ?? "Repartidor"
-                        : "Repartidor";
-
-                    // Obtener nombre de los metadatos
-                    var nombre = session.User.UserMetadata?.TryGetValue("nombre", out var nombreObj) == true
-                        ? nombreObj?.ToString() ?? session.User.Email!
-                        : session.User.Email!;
-
-                    // Crear objeto de sesión
-                    var usuario = new UsuarioSesion
+                    // Intentar login offline con credenciales guardadas
+                    var exito = await LoginOffline();
+                    if (exito)
                     {
-                        Id = session.User.Id!,
-                        Email = session.User.Email!,
-                        Nombre = nombre,
-                        Rol = rol,
-                        FechaInicio = DateTime.Now
-                    };
-
-                    Debug.WriteLine($"Usuario ID: {session.User.Id}");
-                    Debug.WriteLine($"Email: {session.User.Email}");
-                    Debug.WriteLine($"Metadata: {session.User.UserMetadata}");
-
-                    // Guardar en preferencias
-                    Preferences.Set("usuario_actual", JsonSerializer.Serialize(usuario));
-                    Preferences.Set("access_token", session.AccessToken);
-
-                    Debug.WriteLine($"IniciarSesion: Usuario guardado - Rol: {rol}");
-
-                    // Navegar según el rol
-                    if (rol == "Admin")
-                    {
-                        Application.Current.MainPage = new NavigationPage(new Views.AdminDashboardPage());
+                        IsLoading = false;
+                        return;
                     }
                     else
                     {
-                        Application.Current.MainPage = new NavigationPage(new Views.RepartidorPage());
+                        MensajeError = "Sin conexión a internet. No hay sesión guardada disponible.";
+                        IsLoading = false;
+                        return;
                     }
+                }
+
+                if (_supabaseClient?.Auth == null)
+                {
+                    MensajeError = "Error de conexión";
+                    return;
+                }
+
+                Debug.WriteLine($"Intentando login con: {Email}");
+
+                // Intentar login con email
+                var session = await _supabaseClient.Auth.SignIn(Email, Password);
+
+                if (session?.User != null)
+                {
+                    await ProcesarLoginExitoso(session);
                 }
                 else
                 {
-                    MensajeError = "Credenciales incorrectas. Verifique email y contraseña.";
-                    Debug.WriteLine("IniciarSesion: Session o User es null");
+                    MensajeError = "Credenciales incorrectas";
                 }
             }
             catch (Exception ex)
             {
-                MensajeError = $"Error al iniciar sesión: {ex.Message}";
-                Debug.WriteLine($"IniciarSesion EXCEPCIÓN: {ex.Message}");
-                Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+                // Si falla con email, intentar buscar por username
+                try
+                {
+                    var tieneInternet = await TieneInternet();
+                    if (!tieneInternet)
+                    {
+                        var exito = await LoginOffline();
+                        if (exito) return;
+                    }
+
+                    var response = await _supabaseClient.Rpc("find_user_by_login", new { p_login = Email });
+                    if (response.Content != null)
+                    {
+                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        var usuarios = JsonSerializer.Deserialize<List<dynamic>>(response.Content, options);
+
+                        if (usuarios != null && usuarios.Any())
+                        {
+                            var emailEncontrado = usuarios.First().GetProperty("email").GetString();
+                            var session = await _supabaseClient.Auth.SignIn(emailEncontrado, Password);
+
+                            if (session?.User != null)
+                            {
+                                await ProcesarLoginExitoso(session);
+                                return;
+                            }
+                        }
+                    }
+                    MensajeError = $"Credenciales incorrectas";
+                }
+                catch (Exception ex2)
+                {
+                    MensajeError = $"Error: {ex2.Message}";
+                }
             }
             finally
             {
                 IsLoading = false;
             }
+        }
+
+        private async Task<bool> LoginOffline()
+        {
+            // Verificar credenciales guardadas localmente
+            var emailGuardado = Preferences.Get("ultimo_email", string.Empty);
+            var passwordHash = Preferences.Get("ultimo_password_hash", string.Empty);
+
+            if (string.IsNullOrEmpty(emailGuardado) || string.IsNullOrEmpty(passwordHash))
+                return false;
+
+            // Verificar si la contraseña ingresada coincide con el hash guardado
+            var hashIngresado = HashPassword(Password);
+
+            if (emailGuardado == Email && hashIngresado == passwordHash)
+            {
+                var usuarioJson = Preferences.Get("usuario_actual", string.Empty);
+                if (!string.IsNullOrEmpty(usuarioJson))
+                {
+                    var usuario = JsonSerializer.Deserialize<UsuarioSesion>(usuarioJson);
+                    if (usuario != null)
+                    {
+                        IsOfflineMode = true;
+                        await ToastService.Info("⚠️ Modo offline - Acceso con sesión guardada");
+                        await NavegarSegunRol(usuario.Rol);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private string HashPassword(string password)
+        {
+            // Hash simple para verificación offline (no es seguro para producción)
+            // En producción usaría bcrypt, pero para este caso es suficiente
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
+        }
+
+        private async Task ProcesarLoginExitoso(Supabase.Gotrue.Session session)
+        {
+            var rol = session.User.UserMetadata?.TryGetValue("rol", out var rolObj) == true
+                ? rolObj?.ToString() ?? "Repartidor"
+                : "Repartidor";
+
+            var nombre = session.User.UserMetadata?.TryGetValue("nombre", out var nombreObj) == true
+                ? nombreObj?.ToString() ?? session.User.Email!
+                : session.User.Email!;
+
+            var usuario = new UsuarioSesion
+            {
+                Id = session.User.Id!,
+                Email = session.User.Email!,
+                Nombre = nombre,
+                Rol = rol,
+                FechaInicio = DateTime.Now
+            };
+
+            // Guardar datos para login offline
+            Preferences.Set("usuario_actual", JsonSerializer.Serialize(usuario));
+            Preferences.Set("access_token", session.AccessToken);
+            Preferences.Set("ultimo_email", Email);
+            Preferences.Set("ultimo_password_hash", HashPassword(Password));
+            Preferences.Set("ultimo_login_exitoso", DateTime.Now.ToString());
+
+            Debug.WriteLine($"Login exitoso: {usuario.Nombre} - Rol: {rol}");
+
+            await ToastService.Success($"Bienvenido {nombre}");
+            await NavegarSegunRol(rol);
+        }
+
+        private async Task NavegarSegunRol(string rol)
+        {
+            if (rol == "Admin")
+                Application.Current.MainPage = new NavigationPage(new Views.AdminDashboardPage());
+            else
+                Application.Current.MainPage = new NavigationPage(new Views.RepartidorPage());
         }
     }
 }

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PurificadoraApp.Views.FormularioUsuarioPage"
+             Title="Nuevo Usuario"
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1a1a1a}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="15">
+
+                <Label Text="Datos de Acceso" FontSize="16" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#2c3e50, Dark=#ffffff}"
+                       Margin="0,10,0,0"/>
+
+                <Entry x:Name="TxtUsername" Placeholder="Usuario (ej: juan.perez)" 
+                       Keyboard="Text"
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtEmail" Placeholder="Correo electrónico" 
+                       Keyboard="Email"
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtPassword" Placeholder="Contraseña" 
+                       IsPassword="True"
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Entry x:Name="TxtConfirmPassword" Placeholder="Confirmar contraseña" 
+                       IsPassword="True"
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Label Text="Datos Personales" FontSize="16" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#2c3e50, Dark=#ffffff}"
+                       Margin="0,20,0,0"/>
+
+                <Entry x:Name="TxtNombre" Placeholder="Nombre completo" 
+                       BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+
+                <Picker x:Name="PickerRol" Title="Seleccionar rol"
+                        BackgroundColor="{AppThemeBinding Light=#f0f0f0, Dark=#2d2d2d}"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}">
+                    <Picker.Items>
+                        <x:String>Repartidor</x:String>
+                        <x:String>Admin</x:String>
+                    </Picker.Items>
+                </Picker>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <StackLayout Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="10">
+            <Button Text="Crear Usuario" Clicked="OnGuardarClicked"
+                    BackgroundColor="#27ae60" TextColor="White" CornerRadius="10"
+                    HorizontalOptions="FillAndExpand"/>
+            <Button Text="Cancelar" Clicked="OnCancelarClicked"
+                    BackgroundColor="#7f8c8d" TextColor="White" CornerRadius="10"
+                    HorizontalOptions="FillAndExpand"/>
+        </StackLayout>
+
+        <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="3" 
+                           IsVisible="False" IsRunning="False" 
+                           HorizontalOptions="Center" VerticalOptions="Center"/>
+    </Grid>
+</ContentPage>

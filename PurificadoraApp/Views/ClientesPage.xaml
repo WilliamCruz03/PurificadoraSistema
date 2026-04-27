@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:PurificadoraApp.Models"
              x:Class="PurificadoraApp.Views.ClientesPage"
              Title="Gestión de Clientes"
              BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1a1a1a}">
@@ -26,21 +27,21 @@
         <!-- Lista de clientes -->
         <CollectionView x:Name="ListaClientes" Grid.Row="2">
             <CollectionView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="models:Cliente">
                     <Grid Padding="10" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" 
-                          BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}" Margin="5">
+                  BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#2d2d2d}" Margin="5">
                         <Label Text="{Binding NombreCompleto}" FontAttributes="Bold" Grid.Row="0" Grid.Column="0"
-                               TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"/>
                         <Label Text="{Binding Direccion}" Grid.Row="1" Grid.Column="0" FontSize="12" 
-                               TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
+                       TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
                         <Label Text="{Binding Telefono}" Grid.Row="2" Grid.Column="0" FontSize="12" 
-                               TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
+                       TextColor="{AppThemeBinding Light=Gray, Dark=#aaaaaa}"/>
                         <StackLayout Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
                             <Button Text="✏️" BackgroundColor="Transparent" 
-                                    TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"
-                                    Clicked="OnEditarClicked" CommandParameter="{Binding .}"/>
+                            TextColor="{AppThemeBinding Light=#000000, Dark=#ffffff}"
+                            Clicked="OnEditarClicked" CommandParameter="{Binding .}"/>
                             <Button Text="🗑️" BackgroundColor="Transparent" TextColor="Red" 
-                                    Clicked="OnEliminarClicked" CommandParameter="{Binding .}"/>
+                            Clicked="OnEliminarClicked" CommandParameter="{Binding .}"/>
                         </StackLayout>
                     </Grid>
                 </DataTemplate>
@@ -51,5 +52,6 @@
         <ActivityIndicator x:Name="IndicatorCarga" Grid.RowSpan="3" IsVisible="False" IsRunning="False" 
                            HorizontalOptions="Center" VerticalOptions="Center"
                            Color="{AppThemeBinding Light=#2c3e50, Dark=#3498db}"/>
+
     </Grid>
 </ContentPage>
