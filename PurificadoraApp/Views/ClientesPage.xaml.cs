@@ -115,5 +115,10 @@ namespace PurificadoraApp.Views
                 }
             }
         }
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            CargarClientes(); // Recargar cada vez que se muestra la página
+        }
     }
 }

@@ -13,6 +13,7 @@ namespace PurificadoraApp.Views
         {
             public string Id { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
+            public string Username { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
             public string Rol { get; set; } = string.Empty;
             public DateTime CreatedAt { get; set; }
@@ -37,7 +38,29 @@ namespace PurificadoraApp.Views
                 if (response.Content != null)
                 {
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    _usuarios = JsonSerializer.Deserialize<List<UserInfo>>(response.Content, options) ?? new List<UserInfo>();
+                    var usuariosJson = JsonSerializer.Deserialize<List<dynamic>>(response.Content, options);
+
+                    _usuarios = new List<UserInfo>();
+
+                    foreach (var item in usuariosJson)
+                    {
+                        // Obtener metadata como diccionario
+                        var metadataStr = item.GetProperty("raw_user_meta_data").ToString();
+                        var metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(metadataStr);
+
+                        var usuario = new UserInfo
+                        {
+                            Id = item.GetProperty("id").GetString() ?? string.Empty,
+                            Email = item.GetProperty("email").GetString() ?? string.Empty,
+                            Username = metadata != null && metadata.ContainsKey("username") ? metadata["username"] ?? "" : "",
+                            Nombre = metadata != null && metadata.ContainsKey("nombre") ? metadata["nombre"] ?? "" : "",
+                            Rol = metadata != null && metadata.ContainsKey("rol") ? metadata["rol"] ?? "Repartidor" : "Repartidor",
+                            CreatedAt = item.GetProperty("created_at").GetDateTime()
+                        };
+
+                        _usuarios.Add(usuario);
+                    }
+
                     ListaUsuarios.ItemsSource = _usuarios;
                 }
 
@@ -97,6 +120,11 @@ namespace PurificadoraApp.Views
                     await DisplayAlert("Error", $"No se pudo eliminar: {ex.Message}", "OK");
                 }
             }
+        }
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            CargarUsuarios(); // Recargar cada vez que se muestra la página
         }
     }
 }

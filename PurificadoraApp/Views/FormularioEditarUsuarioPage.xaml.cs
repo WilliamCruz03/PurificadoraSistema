@@ -17,7 +17,8 @@ namespace PurificadoraApp.Views
 
         private void CargarDatos()
         {
-            TxtUsername.Text = _usuario.Email; // Usamos email como username por ahora
+            // Cargar datos actuales
+            TxtUsername.Text = _usuario.Username ?? _usuario.Email; // Usar username si existe
             TxtEmail.Text = _usuario.Email;
             TxtNombre.Text = _usuario.Nombre;
             PickerRol.SelectedItem = _usuario.Rol;
@@ -26,6 +27,12 @@ namespace PurificadoraApp.Views
         private async void OnGuardarClicked(object sender, EventArgs e)
         {
             // Validaciones
+            if (string.IsNullOrWhiteSpace(TxtUsername.Text))
+            {
+                await ToastService.Error("Ingrese un nombre de usuario");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(TxtEmail.Text))
             {
                 await ToastService.Error("Ingrese un correo electrónico");
@@ -51,12 +58,12 @@ namespace PurificadoraApp.Views
                 IndicatorCarga.IsVisible = true;
                 IndicatorCarga.IsRunning = true;
 
-                // Actualizar usuario
+                // Actualizar usuario (con username)
                 await _supabaseAdminClient.Rpc("update_user_full", new
                 {
                     p_user_id = _usuario.Id,
                     p_email = TxtEmail.Text,
-                    p_username = TxtUsername.Text,
+                    p_username = TxtUsername.Text,  // Ahora usa el username del campo
                     p_nombre = TxtNombre.Text,
                     p_rol = rol
                 });
