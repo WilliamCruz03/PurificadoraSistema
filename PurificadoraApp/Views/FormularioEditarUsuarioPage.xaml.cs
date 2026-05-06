@@ -17,11 +17,12 @@ namespace PurificadoraApp.Views
 
         private void CargarDatos()
         {
-            // Cargar datos actuales
-            TxtUsername.Text = _usuario.Username ?? _usuario.Email; // Usar username si existe
+            TxtUsername.Text = _usuario.Username;
             TxtEmail.Text = _usuario.Email;
             TxtNombre.Text = _usuario.Nombre;
             PickerRol.SelectedItem = _usuario.Rol;
+            // Email no editable, Username SÍ editable
+            TxtEmail.IsEnabled = false;
         }
 
         private async void OnGuardarClicked(object sender, EventArgs e)
@@ -33,21 +34,15 @@ namespace PurificadoraApp.Views
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(TxtEmail.Text))
+            if (string.IsNullOrWhiteSpace(TxtNombre.Text))
             {
-                await ToastService.Error("Ingrese un correo electrónico");
+                await ToastService.Error("Ingrese el nombre completo");
                 return;
             }
 
             if (!string.IsNullOrWhiteSpace(TxtPassword.Text) && TxtPassword.Text != TxtConfirmPassword.Text)
             {
                 await ToastService.Error("Las contraseñas no coinciden");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(TxtNombre.Text))
-            {
-                await ToastService.Error("Ingrese el nombre completo");
                 return;
             }
 
@@ -58,17 +53,17 @@ namespace PurificadoraApp.Views
                 IndicatorCarga.IsVisible = true;
                 IndicatorCarga.IsRunning = true;
 
-                // Actualizar usuario (con username)
+                // Actualizar usuario (username, nombre, rol)
                 await _supabaseAdminClient.Rpc("update_user_full", new
                 {
                     p_user_id = _usuario.Id,
-                    p_email = TxtEmail.Text,
-                    p_username = TxtUsername.Text,  // Ahora usa el username del campo
+                    p_email = _usuario.Email, // El email no se cambia
+                    p_username = TxtUsername.Text,
                     p_nombre = TxtNombre.Text,
                     p_rol = rol
                 });
 
-                // Si se proporcionó nueva contraseña, actualizarla
+                // Si se proporcionó nueva contraseña
                 if (!string.IsNullOrWhiteSpace(TxtPassword.Text))
                 {
                     await _supabaseAdminClient.Rpc("update_user_password", new

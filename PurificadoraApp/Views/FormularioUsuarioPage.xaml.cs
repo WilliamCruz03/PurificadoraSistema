@@ -52,7 +52,7 @@ namespace PurificadoraApp.Views
                 IndicatorCarga.IsVisible = true;
                 IndicatorCarga.IsRunning = true;
 
-                var response = await _supabaseAdminClient.Rpc("create_user_with_username", new
+                await _supabaseAdminClient.Rpc("create_user_with_username", new
                 {
                     p_email = TxtEmail.Text,
                     p_username = TxtUsername.Text,

@@ -38,29 +38,7 @@ namespace PurificadoraApp.Views
                 if (response.Content != null)
                 {
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var usuariosJson = JsonSerializer.Deserialize<List<dynamic>>(response.Content, options);
-
-                    _usuarios = new List<UserInfo>();
-
-                    foreach (var item in usuariosJson)
-                    {
-                        // Obtener metadata como diccionario
-                        var metadataStr = item.GetProperty("raw_user_meta_data").ToString();
-                        var metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(metadataStr);
-
-                        var usuario = new UserInfo
-                        {
-                            Id = item.GetProperty("id").GetString() ?? string.Empty,
-                            Email = item.GetProperty("email").GetString() ?? string.Empty,
-                            Username = metadata != null && metadata.ContainsKey("username") ? metadata["username"] ?? "" : "",
-                            Nombre = metadata != null && metadata.ContainsKey("nombre") ? metadata["nombre"] ?? "" : "",
-                            Rol = metadata != null && metadata.ContainsKey("rol") ? metadata["rol"] ?? "Repartidor" : "Repartidor",
-                            CreatedAt = item.GetProperty("created_at").GetDateTime()
-                        };
-
-                        _usuarios.Add(usuario);
-                    }
-
+                    _usuarios = JsonSerializer.Deserialize<List<UserInfo>>(response.Content, options) ?? new List<UserInfo>();
                     ListaUsuarios.ItemsSource = _usuarios;
                 }
 
@@ -75,7 +53,6 @@ namespace PurificadoraApp.Views
                 ListaUsuarios.ItemsSource = new List<UserInfo>();
             }
         }
-
 
         private async void OnNuevoUsuarioClicked(object sender, EventArgs e)
         {
@@ -121,6 +98,7 @@ namespace PurificadoraApp.Views
                 }
             }
         }
+
         protected override void OnAppearing()
         {
             base.OnAppearing();
